@@ -171,7 +171,7 @@ export function generateAlgorithmSteps(inputArray: string[]): AlgorithmStep[] {
     description: '创建HashMap用于存储分组结果',
     variables: { map: '{}' },
     inputArray: [...inputArray],
-    groups: new Map(groups),
+    groups: deepCopyMap(groups),
     highlightedElements: [],
   });
 
@@ -190,7 +190,7 @@ export function generateAlgorithmSteps(inputArray: string[]): AlgorithmStep[] {
         i: i,
       },
       inputArray: [...inputArray],
-      groups: new Map(groups),
+      groups: deepCopyMap(groups),
       currentString: str,
       highlightedElements: [str],
     });
@@ -207,7 +207,7 @@ export function generateAlgorithmSteps(inputArray: string[]): AlgorithmStep[] {
         array: charArray,
       },
       inputArray: [...inputArray],
-      groups: new Map(groups),
+      groups: deepCopyMap(groups),
       currentString: str,
       highlightedElements: [str],
     });
@@ -224,7 +224,7 @@ export function generateAlgorithmSteps(inputArray: string[]): AlgorithmStep[] {
         array: sortedArray,
       },
       inputArray: [...inputArray],
-      groups: new Map(groups),
+      groups: deepCopyMap(groups),
       currentString: str,
       highlightedElements: [str],
     });
@@ -241,7 +241,7 @@ export function generateAlgorithmSteps(inputArray: string[]): AlgorithmStep[] {
         key: key,
       },
       inputArray: [...inputArray],
-      groups: new Map(groups),
+      groups: deepCopyMap(groups),
       currentString: str,
       currentKey: key,
       highlightedElements: [str],
@@ -262,7 +262,7 @@ export function generateAlgorithmSteps(inputArray: string[]): AlgorithmStep[] {
         keyExists: keyExists,
       },
       inputArray: [...inputArray],
-      groups: new Map(groups),
+      groups: deepCopyMap(groups),
       currentString: str,
       currentKey: key,
       highlightedElements: [str],
@@ -281,7 +281,7 @@ export function generateAlgorithmSteps(inputArray: string[]): AlgorithmStep[] {
           key: key,
         },
         inputArray: [...inputArray],
-        groups: new Map(groups),
+        groups: deepCopyMap(groups),
         currentString: str,
         currentKey: key,
         highlightedElements: [str],
@@ -300,7 +300,7 @@ export function generateAlgorithmSteps(inputArray: string[]): AlgorithmStep[] {
         key: key,
       },
       inputArray: [...inputArray],
-      groups: new Map(groups),
+      groups: deepCopyMap(groups),
       currentString: str,
       currentKey: key,
       highlightedElements: [str, ...groups.get(key)!],
@@ -317,7 +317,7 @@ export function generateAlgorithmSteps(inputArray: string[]): AlgorithmStep[] {
       result: Array.from(groups.values()),
     },
     inputArray: [...inputArray],
-    groups: new Map(groups),
+    groups: deepCopyMap(groups),
     highlightedElements: [],
   });
 
@@ -331,4 +331,13 @@ function mapToObject(map: Map<string, string[]>): Record<string, string[]> {
     obj[key] = [...value];
   });
   return obj;
+}
+
+// 深拷贝Map（确保每个步骤的状态独立）
+function deepCopyMap(map: Map<string, string[]>): Map<string, string[]> {
+  const newMap = new Map<string, string[]>();
+  map.forEach((value, key) => {
+    newMap.set(key, [...value]);
+  });
+  return newMap;
 }

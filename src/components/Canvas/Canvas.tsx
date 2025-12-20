@@ -38,7 +38,7 @@ export function Canvas({ currentStep }: CanvasProps) {
     svg.call(zoom);
 
     // 绘制内容
-    drawVisualization(mainGroup, currentStep, width);
+    drawVisualization(mainGroup, currentStep);
 
   }, [currentStep]);
 
@@ -63,8 +63,7 @@ export function Canvas({ currentStep }: CanvasProps) {
 
 function drawVisualization(
   group: d3.Selection<SVGGElement, unknown, null, undefined>,
-  step: AlgorithmStep,
-  width: number
+  step: AlgorithmStep
 ) {
   const padding = 40;
   const boxWidth = 60;
@@ -138,20 +137,17 @@ function drawVisualization(
     .style('fill', '#495057')
     .text('分组结果 (HashMap)');
 
-  // 绘制分组
+  // 绘制分组 - 每个key一行
   const groups = step.groups;
-  let groupIndex = 0;
   const groupBoxWidth = 80;
   const groupBoxHeight = 28;
-  const groupGapX = 20;
-  const groupGapY = 60;
-  const maxGroupsPerRow = Math.floor((width - 2 * padding) / (groupBoxWidth + groupGapX));
+  const rowHeight = 38; // 每行高度
 
+  // 将分组转换为数组，每个key一行
+  let rowIndex = 0;
   groups.forEach((strings, key) => {
-    const row = Math.floor(groupIndex / maxGroupsPerRow);
-    const col = groupIndex % maxGroupsPerRow;
-    const groupX = padding + col * (groupBoxWidth + groupGapX + 100);
-    const groupY = groupsY + 20 + row * groupGapY;
+    const groupY = groupsY + 20 + rowIndex * rowHeight;
+    const groupX = padding;
 
     // 绘制key框
     const isCurrentKey = key === step.currentKey;
@@ -208,7 +204,7 @@ function drawVisualization(
         .text(`"${str}"`);
     });
 
-    groupIndex++;
+    rowIndex++;
   });
 
   // 如果没有分组，显示空提示

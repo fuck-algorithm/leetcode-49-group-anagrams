@@ -76,6 +76,9 @@ function drawVisualization(
     .attr('x', padding)
     .attr('y', 30)
     .attr('class', 'section-title')
+    .style('font-size', '14px')
+    .style('font-weight', '600')
+    .style('fill', '#495057')
     .text('输入数组');
 
   // 绘制输入数组
@@ -92,14 +95,19 @@ function drawVisualization(
       .attr('width', boxWidth)
       .attr('height', boxHeight)
       .attr('rx', 4)
-      .attr('class', `input-box ${isHighlighted ? 'highlighted' : ''}`);
+      .style('fill', isHighlighted ? '#fff3cd' : '#e9ecef')
+      .style('stroke', isHighlighted ? '#ffc107' : '#ced4da')
+      .style('stroke-width', isHighlighted ? 2 : 1);
 
     // 绘制文字
     group.append('text')
       .attr('x', x + boxWidth / 2)
       .attr('y', y + boxHeight / 2 + 4)
       .attr('text-anchor', 'middle')
-      .attr('class', `input-text ${isHighlighted ? 'highlighted' : ''}`)
+      .style('font-size', '12px')
+      .style('font-family', "'Monaco', 'Menlo', monospace")
+      .style('fill', isHighlighted ? '#856404' : '#495057')
+      .style('font-weight', isHighlighted ? '600' : 'normal')
       .text(`"${str}"`);
   });
 
@@ -114,7 +122,8 @@ function drawVisualization(
         .attr('x', arrowX)
         .attr('y', arrowY + 15)
         .attr('text-anchor', 'middle')
-        .attr('class', 'arrow-indicator')
+        .style('font-size', '14px')
+        .style('fill', '#ffc107')
         .text('▲');
     }
   }
@@ -124,7 +133,9 @@ function drawVisualization(
   group.append('text')
     .attr('x', padding)
     .attr('y', groupsY)
-    .attr('class', 'section-title')
+    .style('font-size', '14px')
+    .style('font-weight', '600')
+    .style('fill', '#495057')
     .text('分组结果 (HashMap)');
 
   // 绘制分组
@@ -150,20 +161,25 @@ function drawVisualization(
       .attr('width', groupBoxWidth)
       .attr('height', groupBoxHeight)
       .attr('rx', 4)
-      .attr('class', `key-box ${isCurrentKey ? 'highlighted' : ''}`);
+      .style('fill', isCurrentKey ? '#c3e6cb' : '#d4edda')
+      .style('stroke', '#28a745')
+      .style('stroke-width', isCurrentKey ? 2 : 1);
 
     group.append('text')
       .attr('x', groupX + groupBoxWidth / 2)
       .attr('y', groupY + groupBoxHeight / 2 + 4)
       .attr('text-anchor', 'middle')
-      .attr('class', 'key-text')
+      .style('font-size', '11px')
+      .style('font-family', "'Monaco', 'Menlo', monospace")
+      .style('fill', '#155724')
       .text(`"${key}"`);
 
     // 绘制箭头
     group.append('text')
       .attr('x', groupX + groupBoxWidth + 8)
       .attr('y', groupY + groupBoxHeight / 2 + 4)
-      .attr('class', 'arrow-text')
+      .style('font-size', '14px')
+      .style('fill', '#6c757d')
       .text('→');
 
     // 绘制值列表
@@ -178,13 +194,17 @@ function drawVisualization(
         .attr('width', boxWidth)
         .attr('height', groupBoxHeight)
         .attr('rx', 4)
-        .attr('class', `value-box ${isHighlighted ? 'highlighted' : ''}`);
+        .style('fill', isHighlighted ? '#b8daff' : '#cce5ff')
+        .style('stroke', '#007bff')
+        .style('stroke-width', isHighlighted ? 2 : 1);
 
       group.append('text')
         .attr('x', valueX + boxWidth / 2)
         .attr('y', groupY + groupBoxHeight / 2 + 4)
         .attr('text-anchor', 'middle')
-        .attr('class', 'value-text')
+        .style('font-size', '11px')
+        .style('font-family', "'Monaco', 'Menlo', monospace")
+        .style('fill', '#004085')
         .text(`"${str}"`);
     });
 
@@ -196,7 +216,9 @@ function drawVisualization(
     group.append('text')
       .attr('x', padding)
       .attr('y', groupsY + 40)
-      .attr('class', 'empty-hint')
+      .style('font-size', '12px')
+      .style('fill', '#adb5bd')
+      .style('font-style', 'italic')
       .text('(空)');
   }
 }

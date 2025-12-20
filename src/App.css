@@ -16,8 +16,8 @@
 }
 
 .code-section {
-  flex: 0 0 420px;
-  min-width: 350px;
+  flex: 0 0 546px;
+  min-width: 450px;
   display: flex;
   flex-direction: column;
 }

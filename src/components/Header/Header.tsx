@@ -3,7 +3,7 @@ import { getGitHubStars } from '../../utils/githubStars';
 import './Header.css';
 
 const LEETCODE_URL = 'https://leetcode.cn/problems/group-anagrams/';
-const GITHUB_URL = 'https://github.com/JSREI/leetcode-49-group-anagrams';
+const GITHUB_URL = 'https://github.com/fuck-algorithm/leetcode-49-group-anagrams';
 
 export function Header() {
   const [stars, setStars] = useState<number>(0);

@@ -1,6 +1,6 @@
 // GitHub Star数获取与缓存工具
 
-const GITHUB_REPO = 'JSREI/leetcode-49-group-anagrams';
+const GITHUB_REPO = 'fuck-algorithm/leetcode-49-group-anagrams';
 const CACHE_KEY = 'github_stars_cache';
 const CACHE_DURATION = 60 * 60 * 1000; // 1小时缓存
 

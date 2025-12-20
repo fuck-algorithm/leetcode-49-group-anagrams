@@ -1,11 +1,12 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { Header, InputPanel, CodePanel, Canvas, ControlPanel, WeChatFloat } from './components';
+import { usePlaybackSpeed } from './hooks/usePlaybackSpeed';
 import { generateAlgorithmSteps } from './utils/algorithmSteps';
 import type { AlgorithmStep } from './types';
 import './App.css';
 
 const DEFAULT_INPUT = ['eat', 'tea', 'tan', 'ate', 'nat', 'bat'];
-const PLAYBACK_INTERVAL = 1000; // 1秒
+const BASE_INTERVAL = 1000; // 基础间隔1秒
 
 function App() {
   // 使用useMemo初始化steps，避免在effect中调用setState
@@ -13,11 +14,13 @@ function App() {
   const [steps, setSteps] = useState<AlgorithmStep[]>(initialSteps);
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
+  const [playbackSpeed, setPlaybackSpeed] = usePlaybackSpeed();
 
   // 自动播放
   useEffect(() => {
     if (!isPlaying || steps.length === 0) return;
 
+    const interval = BASE_INTERVAL / playbackSpeed;
     const timer = setInterval(() => {
       setCurrentStepIndex((prev) => {
         if (prev >= steps.length - 1) {
@@ -26,10 +29,10 @@ function App() {
         }
         return prev + 1;
       });
-    }, PLAYBACK_INTERVAL);
+    }, interval);
 
     return () => clearInterval(timer);
-  }, [isPlaying, steps.length]);
+  }, [isPlaying, steps.length, playbackSpeed]);
 
   const handleRun = useCallback((strings: string[]) => {
     const newSteps = generateAlgorithmSteps(strings);
@@ -91,6 +94,8 @@ function App() {
         onPlayPause={handlePlayPause}
         onReset={handleReset}
         onSeek={handleSeek}
+        playbackSpeed={playbackSpeed}
+        onSpeedChange={setPlaybackSpeed}
       />
 
       <WeChatFloat />

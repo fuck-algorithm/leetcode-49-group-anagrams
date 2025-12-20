@@ -11,15 +11,37 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 8px 12px;
+  padding: 6px 12px;
   background-color: #2d2d2d;
   border-bottom: 1px solid #3d3d3d;
 }
 
-.code-panel-title {
-  font-size: 0.875rem;
-  font-weight: 600;
+.language-tabs {
+  display: flex;
+  gap: 4px;
+}
+
+.language-tab {
+  padding: 4px 10px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: #888;
+  background-color: transparent;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.language-tab:hover {
   color: #e0e0e0;
+  background-color: #3d3d3d;
+}
+
+.language-tab.active {
+  color: #e0e0e0;
+  background-color: #0d6efd;
+  border-color: #0d6efd;
 }
 
 .code-panel-subtitle {
@@ -39,8 +61,8 @@
   margin: 0;
   padding: 12px 0;
   font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', 'Consolas', monospace;
-  font-size: 0.85rem;
-  line-height: 1.6;
+  font-size: 0.8rem;
+  line-height: 1.5;
   overflow-x: auto;
   flex: 1;
   min-height: 0;
@@ -50,7 +72,7 @@
   display: flex;
   align-items: flex-start;
   padding: 0 12px;
-  min-height: 1.6em;
+  min-height: 1.5em;
   transition: background-color 0.2s;
 }
 
@@ -78,7 +100,7 @@
 .variable-display {
   margin-left: 16px;
   padding: 2px 8px;
-  font-size: 0.75rem;
+  font-size: 0.7rem;
   color: #4ec9b0;
   background-color: rgba(78, 201, 176, 0.15);
   border-radius: 3px;

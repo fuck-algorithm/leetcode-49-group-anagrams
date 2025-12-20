@@ -1,7 +1,11 @@
 import type { AlgorithmStep } from '../types';
 
-// Java代码（用于显示）
-export const JAVA_CODE = `class Solution {
+// 支持的编程语言
+export type CodeLanguage = 'java' | 'python' | 'golang' | 'javascript';
+
+// 各语言代码
+export const CODE_BY_LANGUAGE: Record<CodeLanguage, string> = {
+  java: `class Solution {
     public List<List<String>> groupAnagrams(String[] strs) {
         Map<String, List<String>> map = new HashMap<>();
         
@@ -18,22 +22,141 @@ export const JAVA_CODE = `class Solution {
         
         return new ArrayList<>(map.values());
     }
-}`;
-
-// 代码行映射（行号从1开始）
-export const CODE_LINE_MAP = {
-  CLASS_START: 1,
-  METHOD_START: 2,
-  CREATE_MAP: 3,
-  FOR_LOOP: 5,
-  TO_CHAR_ARRAY: 6,
-  SORT_ARRAY: 7,
-  CREATE_KEY: 8,
-  CHECK_KEY: 10,
-  PUT_NEW_LIST: 11,
-  ADD_TO_LIST: 13,
-  RETURN: 16,
+}`,
+  python: `class Solution:
+    def groupAnagrams(self, strs: List[str]) -> List[List[str]]:
+        anagram_map = {}
+        
+        for s in strs:
+            sorted_str = ''.join(sorted(s))
+            
+            if sorted_str not in anagram_map:
+                anagram_map[sorted_str] = []
+            anagram_map[sorted_str].append(s)
+        
+        return list(anagram_map.values())`,
+  golang: `func groupAnagrams(strs []string) [][]string {
+    anagramMap := make(map[string][]string)
+    
+    for _, str := range strs {
+        bytes := []byte(str)
+        sort.Slice(bytes, func(i, j int) bool {
+            return bytes[i] < bytes[j]
+        })
+        key := string(bytes)
+        
+        anagramMap[key] = append(anagramMap[key], str)
+    }
+    
+    result := make([][]string, 0, len(anagramMap))
+    for _, v := range anagramMap {
+        result = append(result, v)
+    }
+    return result
+}`,
+  javascript: `var groupAnagrams = function(strs) {
+    const map = new Map();
+    
+    for (const str of strs) {
+        const sorted = str.split('').sort().join('');
+        
+        if (!map.has(sorted)) {
+            map.set(sorted, []);
+        }
+        map.get(sorted).push(str);
+    }
+    
+    return Array.from(map.values());
+};`,
 };
+
+// 各语言的行号映射
+export const LINE_MAP_BY_LANGUAGE: Record<CodeLanguage, {
+  CLASS_START: number;
+  METHOD_START: number;
+  CREATE_MAP: number;
+  FOR_LOOP: number;
+  TO_CHAR_ARRAY: number;
+  SORT_ARRAY: number;
+  CREATE_KEY: number;
+  CHECK_KEY: number;
+  PUT_NEW_LIST: number;
+  ADD_TO_LIST: number;
+  RETURN: number;
+}> = {
+  java: {
+    CLASS_START: 1,
+    METHOD_START: 2,
+    CREATE_MAP: 3,
+    FOR_LOOP: 5,
+    TO_CHAR_ARRAY: 6,
+    SORT_ARRAY: 7,
+    CREATE_KEY: 8,
+    CHECK_KEY: 10,
+    PUT_NEW_LIST: 11,
+    ADD_TO_LIST: 13,
+    RETURN: 16,
+  },
+  python: {
+    CLASS_START: 1,
+    METHOD_START: 2,
+    CREATE_MAP: 3,
+    FOR_LOOP: 5,
+    TO_CHAR_ARRAY: 6,
+    SORT_ARRAY: 6,
+    CREATE_KEY: 6,
+    CHECK_KEY: 8,
+    PUT_NEW_LIST: 9,
+    ADD_TO_LIST: 10,
+    RETURN: 12,
+  },
+  golang: {
+    CLASS_START: 1,
+    METHOD_START: 1,
+    CREATE_MAP: 2,
+    FOR_LOOP: 4,
+    TO_CHAR_ARRAY: 5,
+    SORT_ARRAY: 6,
+    CREATE_KEY: 9,
+    CHECK_KEY: 11,
+    PUT_NEW_LIST: 11,
+    ADD_TO_LIST: 11,
+    RETURN: 17,
+  },
+  javascript: {
+    CLASS_START: 1,
+    METHOD_START: 1,
+    CREATE_MAP: 2,
+    FOR_LOOP: 4,
+    TO_CHAR_ARRAY: 5,
+    SORT_ARRAY: 5,
+    CREATE_KEY: 5,
+    CHECK_KEY: 7,
+    PUT_NEW_LIST: 8,
+    ADD_TO_LIST: 10,
+    RETURN: 13,
+  },
+};
+
+// 语言显示名称
+export const LANGUAGE_NAMES: Record<CodeLanguage, string> = {
+  java: 'Java',
+  python: 'Python',
+  golang: 'Go',
+  javascript: 'JavaScript',
+};
+
+// Prism语言映射
+export const PRISM_LANGUAGE_MAP: Record<CodeLanguage, string> = {
+  java: 'java',
+  python: 'python',
+  golang: 'go',
+  javascript: 'javascript',
+};
+
+// 兼容旧代码
+export const JAVA_CODE = CODE_BY_LANGUAGE.java;
+export const CODE_LINE_MAP = LINE_MAP_BY_LANGUAGE.java;
 
 // 生成算法步骤
 export function generateAlgorithmSteps(inputArray: string[]): AlgorithmStep[] {

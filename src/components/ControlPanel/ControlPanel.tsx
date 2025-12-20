@@ -1,4 +1,5 @@
-import { useEffect, useCallback } from 'react';
+import { useEffect, useCallback, useState, useRef } from 'react';
+import { savePlaybackSpeed, SPEED_OPTIONS } from '../../utils/playbackSpeed';
 import './ControlPanel.css';
 
 interface ControlPanelProps {
@@ -10,6 +11,8 @@ interface ControlPanelProps {
   onPlayPause: () => void;
   onReset: () => void;
   onSeek: (step: number) => void;
+  playbackSpeed: number;
+  onSpeedChange: (speed: number) => void;
 }
 
 export function ControlPanel({
@@ -21,7 +24,12 @@ export function ControlPanel({
   onPlayPause,
   onReset,
   onSeek,
+  playbackSpeed,
+  onSpeedChange,
 }: ControlPanelProps) {
+  const [showSpeedMenu, setShowSpeedMenu] = useState(false);
+  const speedMenuRef = useRef<HTMLDivElement>(null);
+
   // 键盘快捷键
   const handleKeyDown = useCallback((e: KeyboardEvent) => {
     // 忽略输入框中的按键
@@ -42,13 +50,29 @@ export function ControlPanel({
         e.preventDefault();
         onPlayPause();
         break;
+      case 'r':
+      case 'R':
+        e.preventDefault();
+        onReset();
+        break;
     }
-  }, [onPrevious, onNext, onPlayPause]);
+  }, [onPrevious, onNext, onPlayPause, onReset]);
 
   useEffect(() => {
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [handleKeyDown]);
+
+  // 点击外部关闭速度菜单
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (speedMenuRef.current && !speedMenuRef.current.contains(e.target as Node)) {
+        setShowSpeedMenu(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   const progress = totalSteps > 0 ? (currentStep / (totalSteps - 1)) * 100 : 0;
 
@@ -65,6 +89,12 @@ export function ControlPanel({
     handleProgressClick(e);
   };
 
+  const handleSpeedSelect = async (speed: number) => {
+    onSpeedChange(speed);
+    await savePlaybackSpeed(speed);
+    setShowSpeedMenu(false);
+  };
+
   return (
     <div className="control-panel">
       <div className="controls-row">
@@ -72,10 +102,11 @@ export function ControlPanel({
           <button 
             className="control-button" 
             onClick={onReset}
-            title="重置"
+            title="重置 (R)"
           >
             <span className="button-icon">⟲</span>
             <span className="button-text">重置</span>
+            <span className="shortcut-hint">R</span>
           </button>
           
           <button 
@@ -109,6 +140,30 @@ export function ControlPanel({
             <span className="button-text">下一步</span>
             <span className="shortcut-hint">→</span>
           </button>
+
+          <div className="speed-control" ref={speedMenuRef}>
+            <button 
+              className="control-button speed-button"
+              onClick={() => setShowSpeedMenu(!showSpeedMenu)}
+              title="播放速度"
+            >
+              <span className="button-icon">⚡</span>
+              <span className="button-text">{playbackSpeed}x</span>
+            </button>
+            {showSpeedMenu && (
+              <div className="speed-menu">
+                {SPEED_OPTIONS.map((speed) => (
+                  <button
+                    key={speed}
+                    className={`speed-option ${playbackSpeed === speed ? 'active' : ''}`}
+                    onClick={() => handleSpeedSelect(speed)}
+                  >
+                    {speed}x
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
 
         <div className="step-indicator">

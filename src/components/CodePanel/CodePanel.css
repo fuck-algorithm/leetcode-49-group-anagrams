@@ -1,0 +1,82 @@
+.code-panel {
+  display: flex;
+  flex-direction: column;
+  background-color: #1e1e1e;
+  border-radius: 8px;
+  overflow: hidden;
+  height: 100%;
+}
+
+.code-panel-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 12px;
+  background-color: #2d2d2d;
+  border-bottom: 1px solid #3d3d3d;
+}
+
+.code-panel-title {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #e0e0e0;
+}
+
+.code-panel-subtitle {
+  font-size: 0.75rem;
+  color: #888;
+}
+
+.code-container {
+  flex: 1;
+  overflow: auto;
+}
+
+.code-pre {
+  margin: 0;
+  padding: 12px 0;
+  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', 'Consolas', monospace;
+  font-size: 0.8rem;
+  line-height: 1.6;
+  overflow-x: auto;
+}
+
+.code-line {
+  display: flex;
+  align-items: flex-start;
+  padding: 0 12px;
+  min-height: 1.6em;
+  transition: background-color 0.2s;
+}
+
+.code-line-highlighted {
+  background-color: rgba(255, 255, 0, 0.15);
+  border-left: 3px solid #ffd700;
+  padding-left: 9px;
+}
+
+.line-number {
+  display: inline-block;
+  width: 2em;
+  margin-right: 12px;
+  color: #6e7681;
+  text-align: right;
+  user-select: none;
+  flex-shrink: 0;
+}
+
+.line-content {
+  flex: 1;
+  white-space: pre;
+}
+
+.variable-display {
+  margin-left: 16px;
+  padding: 2px 8px;
+  font-size: 0.75rem;
+  color: #4ec9b0;
+  background-color: rgba(78, 201, 176, 0.15);
+  border-radius: 3px;
+  white-space: nowrap;
+  flex-shrink: 0;
+}

@@ -8,12 +8,43 @@
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
+.header-left {
+  flex: 1;
+  display: flex;
+  align-items: center;
+}
+
+.back-link {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: white;
+  text-decoration: none;
+  font-size: 0.875rem;
+  padding: 6px 10px;
+  border-radius: 6px;
+  transition: background-color 0.2s;
+  opacity: 0.9;
+}
+
+.back-link:hover {
+  background-color: rgba(255, 255, 255, 0.2);
+  opacity: 1;
+}
+
+.back-link svg {
+  width: 16px;
+  height: 16px;
+}
+
 .header-title {
   font-size: 1.25rem;
   font-weight: 600;
   color: white;
   text-decoration: none;
   transition: opacity 0.2s;
+  text-align: center;
+  flex-shrink: 0;
 }
 
 .header-title:hover {
@@ -22,8 +53,10 @@
 }
 
 .header-right {
+  flex: 1;
   display: flex;
   align-items: center;
+  justify-content: flex-end;
 }
 
 .github-link {

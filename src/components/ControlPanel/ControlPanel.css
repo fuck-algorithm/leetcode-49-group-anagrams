@@ -6,8 +6,9 @@
 
 .controls-row {
   display: flex;
-  justify-content: space-between;
+  flex-direction: column;
   align-items: center;
+  gap: 8px;
   margin-bottom: 10px;
 }
 
@@ -15,6 +16,7 @@
   display: flex;
   gap: 8px;
   align-items: center;
+  justify-content: center;
 }
 
 .control-button {

@@ -45,7 +45,7 @@ export function InputPanel({ onRun }: InputPanelProps) {
   return (
     <div className="input-panel">
       <div className="input-row">
-        <label className="input-label">输入数据:</label>
+        <label className="input-label">输入:</label>
         <input
           type="text"
           className={`input-field ${error ? 'input-error' : ''}`}
@@ -53,29 +53,34 @@ export function InputPanel({ onRun }: InputPanelProps) {
           onChange={(e) => setInputValue(e.target.value)}
           onKeyDown={handleKeyDown}
           placeholder='["eat", "tea", "tan", "ate", "nat", "bat"]'
+          title={error || '输入字符串数组，按Enter运行'}
         />
-        <button className="run-button" onClick={handleRun}>
-          运行
-        </button>
-        <button className="random-button" onClick={handleRandomClick}>
-          随机生成
-        </button>
-      </div>
-      
-      <div className="samples-row">
-        <span className="samples-label">样例:</span>
-        {SAMPLE_DATA.map((sample, index) => (
-          <button
-            key={index}
-            className="sample-button"
-            onClick={() => handleSampleClick(sample.data)}
-          >
-            {sample.label}
+        
+        <div className="samples-group">
+          <span className="samples-label">样例:</span>
+          {SAMPLE_DATA.map((sample, index) => (
+            <button
+              key={index}
+              className="sample-button"
+              onClick={() => handleSampleClick(sample.data)}
+              title={JSON.stringify(sample.data)}
+            >
+              {sample.label}
+            </button>
+          ))}
+        </div>
+
+        <div className="action-buttons">
+          <button className="random-button" onClick={handleRandomClick} title="随机生成符合规则的数据">
+            🎲 随机
           </button>
-        ))}
+          <button className="run-button" onClick={handleRun} title="运行算法">
+            ▶ 运行
+          </button>
+        </div>
       </div>
 
-      {error && <div className="error-message">{error}</div>}
+      {error && <div className="error-tooltip">{error}</div>}
     </div>
   );
 }

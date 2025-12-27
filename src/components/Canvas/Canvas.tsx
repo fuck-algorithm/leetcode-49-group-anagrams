@@ -1,32 +1,24 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import * as d3 from 'd3';
 import type { AlgorithmStep } from '../../types';
+import { 
+  COLORS, 
+  ANIMATION_CONFIG,
+  createGlowFilter,
+  createArrowMarker,
+  drawStatusLabel,
+  drawDataFlowAnimation,
+} from '../../utils/canvasAnimations';
 import './Canvas.css';
 
 interface CanvasProps {
   currentStep: AlgorithmStep | null;
 }
 
-// 颜色配置
-const COLORS = {
-  primary: '#2563eb',
-  primaryLight: '#3b82f6',
-  success: '#22c55e',
-  successLight: '#86efac',
-  warning: '#f59e0b',
-  warningLight: '#fde68a',
-  info: '#06b6d4',
-  infoLight: '#a5f3fc',
-  gray: '#6b7280',
-  grayLight: '#e5e7eb',
-  text: '#1f2937',
-  textLight: '#6b7280',
-  white: '#ffffff',
-};
-
 export function Canvas({ currentStep }: CanvasProps) {
   const svgRef = useRef<SVGSVGElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  const [prevStep, setPrevStep] = useState<AlgorithmStep | null>(null);
 
   useEffect(() => {
     if (!svgRef.current || !containerRef.current || !currentStep) return;
@@ -41,6 +33,14 @@ export function Canvas({ currentStep }: CanvasProps) {
 
     const mainGroup = svg.append('g').attr('class', 'main-group');
 
+    // 创建滤镜和标记
+    const defs = svg.append('defs');
+    createGlowFilter(defs, 'glow-warning', COLORS.warning);
+    createGlowFilter(defs, 'glow-primary', COLORS.primary);
+    createGlowFilter(defs, 'glow-success', COLORS.success);
+    createArrowMarker(defs, 'arrow', COLORS.gray);
+    createArrowMarker(defs, 'arrow-primary', COLORS.primary);
+
     const zoom = d3.zoom<SVGSVGElement, unknown>()
       .scaleExtent([0.5, 3])
       .on('zoom', (event) => {
@@ -49,7 +49,8 @@ export function Canvas({ currentStep }: CanvasProps) {
 
     svg.call(zoom);
 
-    drawVisualization(mainGroup, currentStep, width);
+    drawVisualization(mainGroup, currentStep, width, prevStep);
+    setPrevStep(currentStep);
 
   }, [currentStep]);
 
@@ -75,7 +76,8 @@ export function Canvas({ currentStep }: CanvasProps) {
 function drawVisualization(
   group: d3.Selection<SVGGElement, unknown, null, undefined>,
   step: AlgorithmStep,
-  containerWidth: number
+  containerWidth: number,
+  prevStep: AlgorithmStep | null
 ) {
   const padding = 30;
   const boxWidth = 55;
@@ -83,27 +85,18 @@ function drawVisualization(
   const boxGap = 8;
   const charBoxSize = 24;
 
-  // 定义箭头标记
-  const defs = group.append('defs');
-  defs.append('marker')
-    .attr('id', 'arrow')
-    .attr('markerWidth', 10)
-    .attr('markerHeight', 7)
-    .attr('refX', 9)
-    .attr('refY', 3.5)
-    .attr('orient', 'auto')
-    .append('polygon')
-    .attr('points', '0 0, 10 3.5, 0 7')
-    .style('fill', COLORS.gray);
+  // 检测是否有新增内容
+  const isNewStep = !prevStep || prevStep.stepIndex !== step.stepIndex;
+  const hasNewGroup = prevStep && step.groups.size > prevStep.groups.size;
 
   // 绘制输入数组区域
-  drawInputArraySection(group, step, padding, boxWidth, boxHeight, boxGap);
+  drawInputArraySection(group, step, padding, boxWidth, boxHeight, boxGap, isNewStep);
 
-  // 绘制字符数组处理区域（如果当前步骤涉及）
-  const charArrayY = drawCharArraySection(group, step, padding, charBoxSize, containerWidth);
+  // 绘制字符数组处理区域
+  const charArrayY = drawCharArraySection(group, step, padding, charBoxSize, containerWidth, isNewStep);
 
   // 绘制分组结果区域
-  drawGroupsSection(group, step, padding, boxWidth, boxHeight, boxGap, charArrayY);
+  drawGroupsSection(group, step, padding, boxWidth, boxHeight, boxGap, charArrayY, isNewStep, hasNewGroup);
 }
 
 // 绘制输入数组区域
@@ -113,15 +106,15 @@ function drawInputArraySection(
   padding: number,
   boxWidth: number,
   boxHeight: number,
-  boxGap: number
+  boxGap: number,
+  animate: boolean
 ) {
   const inputArray = step.inputArray;
-  const startY = 30; // 增加顶部间距：20 -> 30
+  const startY = 30;
 
   // 标题带图标
   const titleGroup = group.append('g').attr('transform', `translate(${padding}, ${startY})`);
   
-  // 数组图标
   titleGroup.append('text')
     .attr('x', 0)
     .attr('y', 0)
@@ -137,7 +130,7 @@ function drawInputArraySection(
     .text('输入数组 strs[]');
 
   // 绘制数组元素
-  const arrayY = startY + 30; // 增加标题与数组间距：20 -> 30
+  const arrayY = startY + 30;
   inputArray.forEach((str, i) => {
     const x = padding + i * (boxWidth + boxGap);
     const isHighlighted = step.highlightedElements.includes(str) && str === step.currentString;
@@ -145,14 +138,14 @@ function drawInputArraySection(
     // 索引标签
     group.append('text')
       .attr('x', x + boxWidth / 2)
-      .attr('y', arrayY - 8) // 增加索引标签间距：-5 -> -8
+      .attr('y', arrayY - 8)
       .attr('text-anchor', 'middle')
       .style('font-size', '10px')
       .style('fill', COLORS.textLight)
       .text(`[${i}]`);
 
     // 元素框
-    group.append('rect')
+    const rect = group.append('rect')
       .attr('x', x)
       .attr('y', arrayY)
       .attr('width', boxWidth)
@@ -160,7 +153,13 @@ function drawInputArraySection(
       .attr('rx', 6)
       .style('fill', isHighlighted ? COLORS.warningLight : COLORS.grayLight)
       .style('stroke', isHighlighted ? COLORS.warning : '#d1d5db')
-      .style('stroke-width', isHighlighted ? 2 : 1);
+      .style('stroke-width', isHighlighted ? 2 : 1)
+      .style('transition', 'all 0.3s ease');
+
+    // 高亮时添加发光效果
+    if (isHighlighted) {
+      rect.style('filter', 'url(#glow-warning)');
+    }
 
     // 元素文字
     group.append('text')
@@ -179,33 +178,53 @@ function drawInputArraySection(
     const currentIndex = inputArray.indexOf(step.currentString);
     if (currentIndex >= 0) {
       const arrowX = padding + currentIndex * (boxWidth + boxGap) + boxWidth / 2;
-      const arrowY = arrayY + boxHeight + 18; // 增加箭头间距：12 -> 18
+      const arrowY = arrayY + boxHeight + 18;
 
-      // 指示箭头
-      group.append('path')
+      // 指示箭头（带动画）
+      const arrow = group.append('path')
         .attr('d', `M ${arrowX} ${arrowY} L ${arrowX - 6} ${arrowY + 10} L ${arrowX + 6} ${arrowY + 10} Z`)
         .style('fill', COLORS.warning);
+
+      if (animate) {
+        arrow
+          .style('opacity', 0)
+          .attr('transform', `translate(0, -5)`)
+          .transition()
+          .duration(ANIMATION_CONFIG.duration.fast)
+          .style('opacity', 1)
+          .attr('transform', 'translate(0, 0)');
+      }
 
       // 操作标签
       const actionLabel = getActionLabel(step);
       if (actionLabel) {
         const labelWidth = Math.max(actionLabel.length * 7 + 20, 80);
-        group.append('rect')
-          .attr('x', arrowX - labelWidth / 2)
-          .attr('y', arrowY + 18) // 增加标签间距：16 -> 18
+        
+        const labelGroup = group.append('g')
+          .attr('transform', `translate(${arrowX - labelWidth / 2}, ${arrowY + 18})`);
+
+        labelGroup.append('rect')
           .attr('width', labelWidth)
           .attr('height', 22)
           .attr('rx', 11)
           .style('fill', COLORS.primary);
 
-        group.append('text')
-          .attr('x', arrowX)
-          .attr('y', arrowY + 32) // 增加文字间距：30 -> 32
+        labelGroup.append('text')
+          .attr('x', labelWidth / 2)
+          .attr('y', 14)
           .attr('text-anchor', 'middle')
           .style('font-size', '11px')
           .style('fill', COLORS.white)
           .style('font-weight', '500')
           .text(actionLabel);
+
+        if (animate) {
+          labelGroup
+            .style('opacity', 0)
+            .transition()
+            .duration(ANIMATION_CONFIG.duration.normal)
+            .style('opacity', 1);
+        }
       }
     }
   }
@@ -217,39 +236,48 @@ function drawCharArraySection(
   step: AlgorithmStep,
   padding: number,
   charBoxSize: number,
-  containerWidth: number
+  containerWidth: number,
+  animate: boolean
 ): number {
   const variables = step.variables as Record<string, unknown>;
   const array = variables.array as string[] | undefined;
   const description = step.description;
   
-  // 只在涉及字符数组操作时显示
   if (!array || (!description.includes('字符数组') && !description.includes('排序'))) {
-    return 180; // 增加默认返回值：140 -> 180
+    return 180;
   }
 
-  const sectionY = 180; // 增加区域起始位置：145 -> 180
+  const sectionY = 180;
   const centerX = containerWidth / 2 - 50;
 
-  // 区域背景
-  group.append('rect')
+  // 区域背景（带动画）
+  const bgRect = group.append('rect')
     .attr('x', padding - 10)
     .attr('y', sectionY - 10)
     .attr('width', containerWidth - padding * 2 + 20)
-    .attr('height', 85) // 增加区域高度：70 -> 85
+    .attr('height', 85)
     .attr('rx', 8)
     .style('fill', '#f0f9ff')
     .style('stroke', '#bae6fd')
     .style('stroke-width', 1);
 
+  if (animate) {
+    bgRect
+      .style('opacity', 0)
+      .transition()
+      .duration(ANIMATION_CONFIG.duration.fast)
+      .style('opacity', 1);
+  }
+
   // 标题
   const titleGroup = group.append('g').attr('transform', `translate(${padding}, ${sectionY + 5})`);
+  const isSorting = description.includes('排序');
   
   titleGroup.append('text')
     .attr('x', 0)
     .attr('y', 0)
     .style('font-size', '14px')
-    .text(description.includes('排序') ? '🔄' : '✂️');
+    .text(isSorting ? '🔄' : '✂️');
 
   titleGroup.append('text')
     .attr('x', 22)
@@ -257,16 +285,21 @@ function drawCharArraySection(
     .style('font-size', '12px')
     .style('font-weight', '600')
     .style('fill', COLORS.info)
-    .text(description.includes('排序') ? '排序字符' : '拆分字符');
+    .text(isSorting ? '排序字符' : '拆分字符');
+
+  // 添加状态标签
+  if (isSorting) {
+    drawStatusLabel(group, centerX + 80, sectionY - 5, 'sorting', animate);
+  }
 
   // 绘制字符数组
   const charArrayX = centerX - (array.length * (charBoxSize + 4)) / 2;
-  const charArrayY = sectionY + 30; // 增加字符数组位置：25 -> 30
+  const charArrayY = sectionY + 30;
 
   array.forEach((char, i) => {
     const x = charArrayX + i * (charBoxSize + 4);
     
-    group.append('rect')
+    const charRect = group.append('rect')
       .attr('x', x)
       .attr('y', charArrayY)
       .attr('width', charBoxSize)
@@ -276,7 +309,7 @@ function drawCharArraySection(
       .style('stroke', COLORS.info)
       .style('stroke-width', 1);
 
-    group.append('text')
+    const charText = group.append('text')
       .attr('x', x + charBoxSize / 2)
       .attr('y', charArrayY + charBoxSize / 2 + 4)
       .attr('text-anchor', 'middle')
@@ -285,21 +318,40 @@ function drawCharArraySection(
       .style('fill', '#0e7490')
       .style('font-weight', '600')
       .text(char);
+
+    // 字符动画
+    if (animate) {
+      charRect
+        .style('opacity', 0)
+        .attr('transform', `translate(0, -10)`)
+        .transition()
+        .delay(i * 50)
+        .duration(ANIMATION_CONFIG.duration.fast)
+        .style('opacity', 1)
+        .attr('transform', 'translate(0, 0)');
+
+      charText
+        .style('opacity', 0)
+        .transition()
+        .delay(i * 50 + 100)
+        .duration(ANIMATION_CONFIG.duration.fast)
+        .style('opacity', 1);
+    }
   });
 
-  // 如果是排序步骤，显示排序后的结果提示
-  if (description.includes('排序')) {
+  // 排序结果提示
+  if (isSorting) {
     const sortedStr = array.join('');
     group.append('text')
       .attr('x', centerX)
-      .attr('y', charArrayY + charBoxSize + 18) // 增加提示文字间距：15 -> 18
+      .attr('y', charArrayY + charBoxSize + 18)
       .attr('text-anchor', 'middle')
       .style('font-size', '11px')
       .style('fill', COLORS.info)
       .text(`排序结果: "${sortedStr}"`);
   }
 
-  return sectionY + 110; // 增加返回值：90 -> 110
+  return sectionY + 110;
 }
 
 // 绘制分组结果区域
@@ -310,11 +362,13 @@ function drawGroupsSection(
   boxWidth: number,
   boxHeight: number,
   boxGap: number,
-  startY: number
+  startY: number,
+  animate: boolean,
+  _hasNewGroup: boolean | null
 ) {
   const groups = step.groups;
   const groupBoxWidth = 70;
-  const rowHeight = 60; // 增加行高：48 -> 60
+  const rowHeight = 60;
 
   // 标题带图标
   const titleGroup = group.append('g').attr('transform', `translate(${padding}, ${startY})`);
@@ -337,7 +391,7 @@ function drawGroupsSection(
   if (groups.size === 0) {
     group.append('rect')
       .attr('x', padding)
-      .attr('y', startY + 25) // 增加空状态位置：20 -> 25
+      .attr('y', startY + 25)
       .attr('width', 120)
       .attr('height', 32)
       .attr('rx', 6)
@@ -347,7 +401,7 @@ function drawGroupsSection(
 
     group.append('text')
       .attr('x', padding + 60)
-      .attr('y', startY + 45) // 增加空状态文字位置：40 -> 45
+      .attr('y', startY + 45)
       .attr('text-anchor', 'middle')
       .style('font-size', '12px')
       .style('fill', '#9ca3af')
@@ -358,12 +412,12 @@ function drawGroupsSection(
   // 绘制每个分组
   let rowIndex = 0;
   groups.forEach((strings, key) => {
-    const groupY = startY + 40 + rowIndex * rowHeight; // 增加起始位置：35 -> 40
+    const groupY = startY + 40 + rowIndex * rowHeight;
     const groupX = padding;
     const isCurrentKey = key === step.currentKey;
 
     // Key框
-    group.append('rect')
+    const keyRect = group.append('rect')
       .attr('x', groupX)
       .attr('y', groupY)
       .attr('width', groupBoxWidth)
@@ -371,7 +425,12 @@ function drawGroupsSection(
       .attr('rx', 6)
       .style('fill', isCurrentKey ? COLORS.successLight : '#dcfce7')
       .style('stroke', COLORS.success)
-      .style('stroke-width', isCurrentKey ? 2 : 1);
+      .style('stroke-width', isCurrentKey ? 2 : 1)
+      .style('transition', 'all 0.3s ease');
+
+    if (isCurrentKey) {
+      keyRect.style('filter', 'url(#glow-success)');
+    }
 
     // Key图标
     group.append('text')
@@ -392,14 +451,7 @@ function drawGroupsSection(
 
     // 当前key标签
     if (isCurrentKey) {
-      group.append('text')
-        .attr('x', groupX + groupBoxWidth / 2)
-        .attr('y', groupY - 8) // 增加标签间距：-6 -> -8
-        .attr('text-anchor', 'middle')
-        .style('font-size', '10px')
-        .style('fill', COLORS.success)
-        .style('font-weight', '500')
-        .text('⬇ 当前key');
+      drawStatusLabel(group, groupX + groupBoxWidth / 2, groupY - 18, 'processing', animate);
     }
 
     // 箭头
@@ -417,7 +469,7 @@ function drawGroupsSection(
       const isHighlighted = step.highlightedElements.includes(str);
       const isNewlyAdded = isHighlighted && str === step.currentString && step.description.includes('添加到');
 
-      group.append('rect')
+      const valueRect = group.append('rect')
         .attr('x', valueX)
         .attr('y', groupY)
         .attr('width', boxWidth)
@@ -425,7 +477,12 @@ function drawGroupsSection(
         .attr('rx', 6)
         .style('fill', isHighlighted ? '#bfdbfe' : '#dbeafe')
         .style('stroke', COLORS.primary)
-        .style('stroke-width', isHighlighted ? 2 : 1);
+        .style('stroke-width', isHighlighted ? 2 : 1)
+        .style('transition', 'all 0.3s ease');
+
+      if (isHighlighted) {
+        valueRect.style('filter', 'url(#glow-primary)');
+      }
 
       group.append('text')
         .attr('x', valueX + boxWidth / 2)
@@ -437,16 +494,19 @@ function drawGroupsSection(
         .style('font-weight', isHighlighted ? '600' : 'normal')
         .text(`"${str}"`);
 
-      // 新增标签
+      // 新增标签和动画
       if (isNewlyAdded) {
-        group.append('text')
-          .attr('x', valueX + boxWidth / 2)
-          .attr('y', groupY - 8) // 增加标签间距：-6 -> -8
-          .attr('text-anchor', 'middle')
-          .style('font-size', '10px')
-          .style('fill', COLORS.primary)
-          .style('font-weight', '500')
-          .text('✨ 新增');
+        drawStatusLabel(group, valueX + boxWidth / 2, groupY - 18, 'new', animate);
+        
+        // 数据流动画
+        if (animate && step.currentString) {
+          const inputIndex = step.inputArray.indexOf(step.currentString);
+          if (inputIndex >= 0) {
+            const startX = padding + inputIndex * (boxWidth + boxGap) + boxWidth / 2;
+            const startYPos = 30 + 30 + boxHeight;
+            drawDataFlowAnimation(group, startX, startYPos, valueX + boxWidth / 2, groupY, COLORS.primary, 600);
+          }
+        }
       }
     });
 

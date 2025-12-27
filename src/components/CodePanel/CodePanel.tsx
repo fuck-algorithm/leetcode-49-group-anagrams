@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { Highlight, themes } from 'prism-react-renderer';
+import { useState, useEffect } from 'react';
+import { Highlight, themes, Prism } from 'prism-react-renderer';
 import { 
   CODE_BY_LANGUAGE, 
   LANGUAGE_NAMES, 
@@ -10,14 +10,37 @@ import {
 import type { AlgorithmStep } from '../../types';
 import './CodePanel.css';
 
+// 设置全局Prism以支持额外语言
+(typeof globalThis !== "undefined" ? globalThis : window).Prism = Prism;
+
 interface CodePanelProps {
   currentStep: AlgorithmStep | null;
 }
 
 const LANGUAGES: CodeLanguage[] = ['java', 'python', 'golang', 'javascript'];
 
+// 预加载Java语言支持
+let javaLoaded = false;
+const loadJavaLanguage = async () => {
+  if (javaLoaded) return;
+  try {
+    await import('prismjs/components/prism-java');
+    javaLoaded = true;
+  } catch (e) {
+    console.warn('Failed to load Java language support:', e);
+  }
+};
+
 export function CodePanel({ currentStep }: CodePanelProps) {
   const [language, setLanguage] = useState<CodeLanguage>('java');
+  const [languagesReady, setLanguagesReady] = useState(false);
+  
+  // 加载额外的语言支持
+  useEffect(() => {
+    loadJavaLanguage().then(() => {
+      setLanguagesReady(true);
+    });
+  }, []);
   
   const code = CODE_BY_LANGUAGE[language];
   const lineMap = LINE_MAP_BY_LANGUAGE[language];
@@ -107,7 +130,12 @@ export function CodePanel({ currentStep }: CodePanelProps) {
         <span className="code-panel-subtitle">排序方法</span>
       </div>
       <div className="code-container">
-        <Highlight theme={themes.vsDark} code={code} language={prismLanguage}>
+        <Highlight 
+          key={`${prismLanguage}-${languagesReady}`}
+          theme={themes.vsDark} 
+          code={code} 
+          language={prismLanguage}
+        >
           {({ style, tokens, getLineProps, getTokenProps }) => (
             <pre style={style} className="code-pre">
               {tokens.map((line, i) => {

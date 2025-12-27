@@ -24,6 +24,7 @@ let javaLoaded = false;
 const loadJavaLanguage = async () => {
   if (javaLoaded) return;
   try {
+    // @ts-expect-error prismjs组件没有类型定义
     await import('prismjs/components/prism-java');
     javaLoaded = true;
   } catch (e) {

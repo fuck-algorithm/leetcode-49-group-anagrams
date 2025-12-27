@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { getGitHubStars } from '../../utils/githubStars';
+import { AlgorithmModal } from '../AlgorithmModal';
 import './Header.css';
 
 const LEETCODE_URL = 'https://leetcode.cn/problems/group-anagrams/';
@@ -8,6 +9,7 @@ const GITHUB_URL = 'https://github.com/fuck-algorithm/leetcode-49-group-anagrams
 
 export function Header() {
   const [stars, setStars] = useState<number>(0);
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   useEffect(() => {
     getGitHubStars().then(setStars);
@@ -39,6 +41,16 @@ export function Header() {
       </a>
       
       <div className="header-right">
+        <button 
+          className="algorithm-btn"
+          onClick={() => setIsModalOpen(true)}
+          title="查看算法思路"
+        >
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+            <path d="M8 1.5a6.5 6.5 0 100 13 6.5 6.5 0 000-13zM0 8a8 8 0 1116 0A8 8 0 010 8zm6.5-.25A.75.75 0 017.25 7h1a.75.75 0 01.75.75v2.75h.25a.75.75 0 010 1.5h-2a.75.75 0 010-1.5h.25v-2h-.25a.75.75 0 01-.75-.75zM8 6a1 1 0 100-2 1 1 0 000 2z"/>
+          </svg>
+          <span>算法思路</span>
+        </button>
         <a 
           href={GITHUB_URL} 
           target="_blank" 
@@ -57,6 +69,11 @@ export function Header() {
           </span>
         </a>
       </div>
+
+      <AlgorithmModal 
+        isOpen={isModalOpen} 
+        onClose={() => setIsModalOpen(false)} 
+      />
     </header>
   );
 }

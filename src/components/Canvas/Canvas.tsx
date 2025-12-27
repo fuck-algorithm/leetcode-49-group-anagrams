@@ -116,7 +116,7 @@ function drawInputArraySection(
   boxGap: number
 ) {
   const inputArray = step.inputArray;
-  const startY = 20;
+  const startY = 30; // 增加顶部间距：20 -> 30
 
   // 标题带图标
   const titleGroup = group.append('g').attr('transform', `translate(${padding}, ${startY})`);
@@ -137,7 +137,7 @@ function drawInputArraySection(
     .text('输入数组 strs[]');
 
   // 绘制数组元素
-  const arrayY = startY + 20;
+  const arrayY = startY + 30; // 增加标题与数组间距：20 -> 30
   inputArray.forEach((str, i) => {
     const x = padding + i * (boxWidth + boxGap);
     const isHighlighted = step.highlightedElements.includes(str) && str === step.currentString;
@@ -145,7 +145,7 @@ function drawInputArraySection(
     // 索引标签
     group.append('text')
       .attr('x', x + boxWidth / 2)
-      .attr('y', arrayY - 5)
+      .attr('y', arrayY - 8) // 增加索引标签间距：-5 -> -8
       .attr('text-anchor', 'middle')
       .style('font-size', '10px')
       .style('fill', COLORS.textLight)
@@ -179,7 +179,7 @@ function drawInputArraySection(
     const currentIndex = inputArray.indexOf(step.currentString);
     if (currentIndex >= 0) {
       const arrowX = padding + currentIndex * (boxWidth + boxGap) + boxWidth / 2;
-      const arrowY = arrayY + boxHeight + 8;
+      const arrowY = arrayY + boxHeight + 18; // 增加箭头间距：12 -> 18
 
       // 指示箭头
       group.append('path')
@@ -192,7 +192,7 @@ function drawInputArraySection(
         const labelWidth = Math.max(actionLabel.length * 7 + 20, 80);
         group.append('rect')
           .attr('x', arrowX - labelWidth / 2)
-          .attr('y', arrowY + 14)
+          .attr('y', arrowY + 18) // 增加标签间距：16 -> 18
           .attr('width', labelWidth)
           .attr('height', 22)
           .attr('rx', 11)
@@ -200,7 +200,7 @@ function drawInputArraySection(
 
         group.append('text')
           .attr('x', arrowX)
-          .attr('y', arrowY + 28)
+          .attr('y', arrowY + 32) // 增加文字间距：30 -> 32
           .attr('text-anchor', 'middle')
           .style('font-size', '11px')
           .style('fill', COLORS.white)
@@ -225,10 +225,10 @@ function drawCharArraySection(
   
   // 只在涉及字符数组操作时显示
   if (!array || (!description.includes('字符数组') && !description.includes('排序'))) {
-    return 110;
+    return 180; // 增加默认返回值：140 -> 180
   }
 
-  const sectionY = 115;
+  const sectionY = 180; // 增加区域起始位置：145 -> 180
   const centerX = containerWidth / 2 - 50;
 
   // 区域背景
@@ -236,7 +236,7 @@ function drawCharArraySection(
     .attr('x', padding - 10)
     .attr('y', sectionY - 10)
     .attr('width', containerWidth - padding * 2 + 20)
-    .attr('height', 70)
+    .attr('height', 85) // 增加区域高度：70 -> 85
     .attr('rx', 8)
     .style('fill', '#f0f9ff')
     .style('stroke', '#bae6fd')
@@ -261,7 +261,7 @@ function drawCharArraySection(
 
   // 绘制字符数组
   const charArrayX = centerX - (array.length * (charBoxSize + 4)) / 2;
-  const charArrayY = sectionY + 25;
+  const charArrayY = sectionY + 30; // 增加字符数组位置：25 -> 30
 
   array.forEach((char, i) => {
     const x = charArrayX + i * (charBoxSize + 4);
@@ -292,14 +292,14 @@ function drawCharArraySection(
     const sortedStr = array.join('');
     group.append('text')
       .attr('x', centerX)
-      .attr('y', charArrayY + charBoxSize + 15)
+      .attr('y', charArrayY + charBoxSize + 18) // 增加提示文字间距：15 -> 18
       .attr('text-anchor', 'middle')
       .style('font-size', '11px')
       .style('fill', COLORS.info)
       .text(`排序结果: "${sortedStr}"`);
   }
 
-  return sectionY + 80;
+  return sectionY + 110; // 增加返回值：90 -> 110
 }
 
 // 绘制分组结果区域
@@ -314,7 +314,7 @@ function drawGroupsSection(
 ) {
   const groups = step.groups;
   const groupBoxWidth = 70;
-  const rowHeight = 42;
+  const rowHeight = 60; // 增加行高：48 -> 60
 
   // 标题带图标
   const titleGroup = group.append('g').attr('transform', `translate(${padding}, ${startY})`);
@@ -337,7 +337,7 @@ function drawGroupsSection(
   if (groups.size === 0) {
     group.append('rect')
       .attr('x', padding)
-      .attr('y', startY + 20)
+      .attr('y', startY + 25) // 增加空状态位置：20 -> 25
       .attr('width', 120)
       .attr('height', 32)
       .attr('rx', 6)
@@ -347,7 +347,7 @@ function drawGroupsSection(
 
     group.append('text')
       .attr('x', padding + 60)
-      .attr('y', startY + 40)
+      .attr('y', startY + 45) // 增加空状态文字位置：40 -> 45
       .attr('text-anchor', 'middle')
       .style('font-size', '12px')
       .style('fill', '#9ca3af')
@@ -358,7 +358,7 @@ function drawGroupsSection(
   // 绘制每个分组
   let rowIndex = 0;
   groups.forEach((strings, key) => {
-    const groupY = startY + 25 + rowIndex * rowHeight;
+    const groupY = startY + 40 + rowIndex * rowHeight; // 增加起始位置：35 -> 40
     const groupX = padding;
     const isCurrentKey = key === step.currentKey;
 
@@ -394,7 +394,7 @@ function drawGroupsSection(
     if (isCurrentKey) {
       group.append('text')
         .attr('x', groupX + groupBoxWidth / 2)
-        .attr('y', groupY - 6)
+        .attr('y', groupY - 8) // 增加标签间距：-6 -> -8
         .attr('text-anchor', 'middle')
         .style('font-size', '10px')
         .style('fill', COLORS.success)
@@ -441,7 +441,7 @@ function drawGroupsSection(
       if (isNewlyAdded) {
         group.append('text')
           .attr('x', valueX + boxWidth / 2)
-          .attr('y', groupY - 6)
+          .attr('y', groupY - 8) // 增加标签间距：-6 -> -8
           .attr('text-anchor', 'middle')
           .style('font-size', '10px')
           .style('fill', COLORS.primary)

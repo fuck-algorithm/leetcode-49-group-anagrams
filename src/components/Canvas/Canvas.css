@@ -44,33 +44,6 @@
   cursor: grabbing;
 }
 
-.step-description {
-  position: absolute;
-  bottom: 12px;
-  left: 12px;
-  right: 12px;
-  padding: 8px 12px;
-  background-color: rgba(37, 99, 235, 0.95);
-  color: white;
-  border-radius: 6px;
-  font-size: 0.8rem;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  animation: slideUp 0.3s ease-out;
-}
-
-@keyframes slideUp {
-  from {
-    opacity: 0;
-    transform: translateY(10px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
 @keyframes pulse {
   0%, 100% {
     transform: scale(1);
@@ -87,18 +60,6 @@
   50% {
     filter: drop-shadow(0 0 8px rgba(251, 191, 36, 0.8));
   }
-}
-
-.step-index {
-  padding: 2px 8px;
-  background-color: rgba(255, 255, 255, 0.2);
-  border-radius: 4px;
-  font-weight: 600;
-  white-space: nowrap;
-}
-
-.step-text {
-  flex: 1;
 }
 
 /* SVG动画样式 */

@@ -296,6 +296,117 @@ export function drawStatusLabel(
   return labelGroup;
 }
 
+// 绘制贝塞尔曲线箭头
+export function drawBezierArrow(
+  group: d3.Selection<SVGGElement, unknown, null, undefined>,
+  startX: number,
+  startY: number,
+  endX: number,
+  endY: number,
+  color: string = COLORS.primary,
+  animated: boolean = true,
+  withArrowhead: boolean = true
+) {
+  const dx = endX - startX;
+  const controlOffset = Math.abs(dx) * 0.4 + 30;
+  const cp1x = startX;
+  const cp1y = startY + controlOffset;
+  const cp2x = endX;
+  const cp2y = endY - controlOffset;
+  
+  const path = group.append('path')
+    .attr('d', `M ${startX} ${startY} C ${cp1x} ${cp1y}, ${cp2x} ${cp2y}, ${endX} ${endY}`)
+    .style('fill', 'none')
+    .style('stroke', color)
+    .style('stroke-width', 2.5)
+    .style('stroke-linecap', 'round')
+    .attr('marker-end', withArrowhead ? `url(#arrow-${color.replace('#', '')})` : '');
+
+  if (animated) {
+    const pathLength = (path.node() as SVGPathElement).getTotalLength();
+    
+    path
+      .attr('stroke-dasharray', pathLength)
+      .attr('stroke-dashoffset', pathLength)
+      .transition()
+      .duration(ANIMATION_CONFIG.duration.normal * 1.5)
+      .ease(ANIMATION_CONFIG.easing.smooth)
+      .attr('stroke-dashoffset', 0);
+  }
+
+  return path;
+}
+
+// 绘制直箭头（短距离）
+export function drawStraightArrow(
+  group: d3.Selection<SVGGElement, unknown, null, undefined>,
+  startX: number,
+  startY: number,
+  endX: number,
+  endY: number,
+  color: string = COLORS.primary,
+  animated: boolean = true,
+  label: string = ''
+) {
+  const arrowGroup = group.append('g');
+  
+  // 箭头线
+  const line = arrowGroup.append('line')
+    .attr('x1', startX)
+    .attr('y1', startY)
+    .attr('x2', animated ? startX : endX)
+    .attr('y2', animated ? startY : endY)
+    .style('stroke', color)
+    .style('stroke-width', 2)
+    .style('marker-end', `url(#arrow-${color.replace('#', '')})`);
+
+  if (animated) {
+    line
+      .transition()
+      .duration(ANIMATION_CONFIG.duration.normal)
+      .ease(ANIMATION_CONFIG.easing.smooth)
+      .attr('x2', endX)
+      .attr('y2', endY);
+  }
+
+  // 标签
+  if (label) {
+    const midX = (startX + endX) / 2;
+    const midY = (startY + endY) / 2;
+    
+    const labelBg = arrowGroup.append('rect')
+      .attr('x', midX - label.length * 4 - 8)
+      .attr('y', midY - 10)
+      .attr('width', label.length * 8 + 16)
+      .attr('height', 20)
+      .attr('rx', 4)
+      .style('fill', 'white')
+      .style('stroke', color)
+      .style('stroke-width', 1);
+
+    arrowGroup.append('text')
+      .attr('x', midX)
+      .attr('y', midY + 4)
+      .attr('text-anchor', 'middle')
+      .style('font-size', '10px')
+      .style('fill', color)
+      .style('font-weight', '500')
+      .text(label);
+
+    if (animated) {
+      const labelGroup = d3.selectAll([labelBg.node(), arrowGroup.selectAll('text').node()]);
+      labelGroup
+        .style('opacity', 0)
+        .transition()
+        .delay(ANIMATION_CONFIG.duration.normal)
+        .duration(ANIMATION_CONFIG.duration.fast)
+        .style('opacity', 1);
+    }
+  }
+
+  return arrowGroup;
+}
+
 // 绘制进度指示器
 export function drawProgressIndicator(
   group: d3.Selection<SVGGElement, unknown, null, undefined>,

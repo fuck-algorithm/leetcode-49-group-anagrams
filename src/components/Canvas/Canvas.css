@@ -10,203 +10,98 @@
   border-radius: 9px;
   box-shadow: 0 5px 20px rgba(27, 43, 67, 0.07);
 }
-
 .canvas-head {
   display: flex;
-  flex: 0 0 46px;
+  flex: 0 0 38px;
   align-items: center;
   justify-content: space-between;
-  padding: 0 15px;
-  background: #ffffff;
+  gap: 12px;
+  padding: 0 13px;
+  background: #fff;
   border-bottom: 1px solid #e3e9f1;
 }
+.canvas-head-title { display: flex; min-width: 0; align-items: baseline; gap: 11px; }
+.canvas-head-title strong { flex-shrink: 0; color: #25334a; font-size: 0.82rem; font-weight: 750; }
+.canvas-head-status { overflow: hidden; color: #65748a; font-size: 0.66rem; text-overflow: ellipsis; white-space: nowrap; }
+.canvas-step-chip { flex-shrink: 0; padding: 4px 8px; color: #245bbd; background: #edf4ff; border: 1px solid #cfe0fa; border-radius: 5px; font-family: "SFMono-Regular", Consolas, monospace; font-size: 0.59rem; font-weight: 800; }
 
-.canvas-head-title {
+.step-explanation {
   display: flex;
+  flex: 0 0 auto;
   align-items: baseline;
-  gap: 10px;
+  gap: 7px;
+  min-height: 28px;
+  padding: 5px 13px 4px;
+  color: #3f526b;
+  background: #eef4fa;
+  border-bottom: 1px solid #dce6f0;
+  font-size: 0.66rem;
+  line-height: 1.3;
 }
+.step-explanation-label { flex-shrink: 0; color: #245bbd; font-weight: 750; }
+.step-explanation-separator { flex-shrink: 0; color: #a1afbf; }
 
-.canvas-kicker {
-  color: #8a97a9;
-  font-size: 0.58rem;
-  font-weight: 800;
-  letter-spacing: 0.12em;
-}
-
-.canvas-head-title strong {
-  color: #25334a;
-  font-size: 0.88rem;
-  font-weight: 700;
-}
-
-.canvas-head-meta {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.canvas-step-chip {
-  padding: 4px 8px;
-  color: #245bbd;
-  background: #edf4ff;
-  border: 1px solid #cfe0fa;
-  border-radius: 5px;
-  font-family: "SFMono-Regular", Consolas, monospace;
-  font-size: 0.62rem;
-  font-weight: 800;
-  letter-spacing: 0.04em;
-}
-
-.canvas-head-status {
-  max-width: 190px;
-  overflow: hidden;
-  color: #718096;
-  font-size: 0.68rem;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.canvas-container {
-  position: relative;
-  flex: 1;
-  min-width: 0;
-  min-height: 0;
-  overflow: hidden;
-  background: #fbfcfe;
-}
-
+.canvas-container { position: relative; flex: 1; min-width: 0; min-height: 0; overflow: hidden; background: #fbfcfe; }
 .canvas-container.canvas-scroll { overflow-y: auto; }
 .canvas-container.canvas-scroll-x { overflow-x: auto; }
-
-.canvas-viewport {
-  position: relative;
-  min-width: 100%;
-  min-height: 100%;
-}
-
-.canvas-svg {
-  display: block;
-  min-width: 100%;
-  min-height: 100%;
-  cursor: grab;
-}
-
+.canvas-viewport { position: relative; min-width: 100%; min-height: 100%; }
+.canvas-svg { display: block; min-width: 100%; min-height: 100%; cursor: grab; }
 .canvas-svg:active { cursor: grabbing; }
 
-.canvas-legend {
-  position: absolute;
-  top: 12px;
-  right: 12px;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 6px 9px;
-  color: #68788f;
-  background: rgba(255, 255, 255, 0.94);
-  border: 1px solid #e0e7f0;
-  border-radius: 6px;
-  box-shadow: 0 3px 10px rgba(25, 45, 72, 0.08);
-  font-size: 0.62rem;
-  pointer-events: none;
-  z-index: 5;
-}
-
-.legend-item { display: inline-flex; align-items: center; gap: 5px; white-space: nowrap; }
-.legend-swatch { width: 8px; height: 8px; border-radius: 2px; }
+.canvas-legend { position: absolute; top: 8px; right: 8px; display: flex; align-items: center; gap: 8px; padding: 4px 7px; color: #68788f; background: rgba(255,255,255,.95); border: 1px solid #e0e7f0; border-radius: 5px; font-size: .58rem; pointer-events: none; z-index: 5; }
+.legend-item { display: inline-flex; align-items: center; gap: 4px; white-space: nowrap; }
+.legend-swatch { width: 7px; height: 7px; border-radius: 2px; }
 .legend-swatch.current { background: #f2b84b; }
 .legend-swatch.key { background: #36a58e; }
 .legend-swatch.value { background: #6f9de0; }
 
-.canvas-controls {
-  position: absolute;
-  right: 12px;
-  bottom: 12px;
-  display: flex;
-  gap: 3px;
-  padding: 3px;
-  background: rgba(255, 255, 255, 0.95);
-  border: 1px solid #dce4ef;
-  border-radius: 7px;
-  box-shadow: 0 3px 10px rgba(25, 45, 72, 0.1);
-  z-index: 5;
-}
-
-.canvas-control-btn {
-  width: 27px;
-  height: 27px;
-  color: #5b6b81;
-  background: transparent;
-  border: 0;
-  border-radius: 4px;
-  cursor: pointer;
-  font-size: 0.95rem;
-  line-height: 1;
-  transition: color 140ms ease, background-color 140ms ease;
-}
-
+.canvas-controls { position: absolute; right: 8px; bottom: 8px; display: flex; gap: 2px; padding: 2px; background: rgba(255,255,255,.96); border: 1px solid #dce4ef; border-radius: 6px; z-index: 5; }
+.canvas-control-btn { width: 25px; height: 25px; color: #5b6b81; background: transparent; border: 0; border-radius: 4px; cursor: pointer; font-size: .88rem; }
 .canvas-control-btn:hover { color: #1d4ed8; background: #edf4ff; }
+.canvas-tip { flex: 0 0 17px; padding: 2px 9px; color: #93a0b1; background: #f7f9fc; border-top: 1px solid #e6ebf2; font-size: .56rem; text-align: right; }
 
-.canvas-tip {
-  flex: 0 0 25px;
-  padding: 4px 12px 5px;
-  color: #93a0b1;
-  background: #f7f9fc;
-  border-top: 1px solid #e6ebf2;
-  font-size: 0.61rem;
-  text-align: right;
-}
-
-.canvas-svg text {
-  font-family: Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-  fill: #34445a;
-}
-.canvas-svg .lane-title { font-size: 13px; font-weight: 700; }
-.canvas-svg .lane-status {
-  font-family: "SFMono-Regular", Consolas, monospace;
-  font-size: 10px;
-  font-weight: 700;
-  letter-spacing: 0.04em;
-}
-.canvas-svg .array-index {
-  fill: #8997a9;
-  font-family: "SFMono-Regular", Consolas, monospace;
-  font-size: 10px;
-}
+.canvas-svg text { font-family: Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; fill: #34445a; }
+.canvas-svg .lane-title { font-size: 10px; font-weight: 750; }
+.canvas-svg .lane-status { font-family: "SFMono-Regular", Consolas, monospace; font-size: 8px; font-weight: 750; letter-spacing: .02em; }
+.canvas-svg .array-index { fill: #8997a9; font-family: "SFMono-Regular", Consolas, monospace; font-size: 8px; }
 .canvas-svg .array-value,
 .canvas-svg .map-value-label,
-.canvas-svg .map-key-label {
-  fill: #26364d;
-  font-family: "SFMono-Regular", Consolas, monospace;
-  font-size: 12px;
-  font-weight: 600;
-}
-.canvas-svg .array-value.current { fill: #885d12; font-weight: 750; }
-.canvas-svg .char-value {
-  fill: #177c76;
-  font-family: "SFMono-Regular", Consolas, monospace;
-  font-size: 14px;
-  font-weight: 750;
-}
-.canvas-svg .transform-result {
-  fill: #287c75;
-  font-family: "SFMono-Regular", Consolas, monospace;
-  font-size: 11px;
-  font-weight: 700;
-}
+.canvas-svg .map-key-label { fill: #26364d; font-family: "SFMono-Regular", Consolas, monospace; font-size: 9px; font-weight: 650; }
+.canvas-svg .array-value.current { fill: #885d12; font-weight: 800; }
+.canvas-svg .char-value { fill: #177c76; font-family: "SFMono-Regular", Consolas, monospace; font-size: 12px; font-weight: 800; }
+.canvas-svg .transform-caption { fill: #697a8e; font-size: 8px; }
+.canvas-svg .signature-link { stroke: #8abbb2; stroke-width: 1.3; }
+.canvas-svg .signature-pill { fill: #f7f9fb; stroke: #bac6d4; stroke-width: 1; stroke-dasharray: 3 2; }
+.canvas-svg .signature-pill.is-ready { fill: #e0f3ed; stroke: #35a183; stroke-width: 1.5; stroke-dasharray: none; }
+.canvas-svg .signature-label { fill: #688276; font-family: "SFMono-Regular", Consolas, monospace; font-size: 7px; font-weight: 700; }
+.canvas-svg .signature-value { fill: #216f63; font-family: "SFMono-Regular", Consolas, monospace; font-size: 9px; font-weight: 800; }
+.canvas-svg .transform-result { fill: #287c75; font-family: "SFMono-Regular", Consolas, monospace; font-size: 9px; font-weight: 700; }
 .canvas-svg .transform-note,
-.canvas-svg .empty-state { fill: #738198; font-size: 12px; }
+.canvas-svg .empty-state { fill: #738198; font-size: 9px; }
 .canvas-svg .map-key-label { fill: #24775f; }
+.canvas-svg .map-key-caption,
+.canvas-svg .new-value-caption { fill: #8492a3; font-size: 6px; }
 .canvas-svg .map-value-label.is-new { fill: #245cb4; }
-.canvas-svg .map-connector { stroke: #53a98d; stroke-width: 1.6; }
+.canvas-svg .map-connector { stroke: #53a98d; stroke-width: 1.5; }
+.canvas-svg .map-decision rect { fill: #f0f7f4; stroke: #acd1bf; stroke-width: 1; }
+.canvas-svg .map-decision.hit rect { fill: #edf5ff; stroke: #b4c9e8; }
+.canvas-svg .map-decision text { fill: #3d5f75; font-size: 8px; font-weight: 700; }
+.canvas-svg .rule-panel { fill: #142b42; stroke: #1c405c; stroke-width: 1; }
+.canvas-svg .rule-eyebrow { fill: #83bbc2; font-size: 8px; font-weight: 750; }
+.canvas-svg .rule-statement { fill: #f3f8fc; font-size: 13px; font-weight: 800; }
+.canvas-svg .rule-example { fill: #89d1bf; font-family: "SFMono-Regular", Consolas, monospace; font-size: 10px; font-weight: 800; }
+.canvas-svg .archive-pulse { pointer-events: none; }
+.canvas-svg .rule-panel { fill: #142b42; stroke: #1c405c; stroke-width: 1; }
+.canvas-svg .rule-eyebrow { fill: #83bbc2; font-size: 8px; font-weight: 750; }
+.canvas-svg .rule-statement { fill: #f3f8fc; font-size: 13px; font-weight: 800; }
+.canvas-svg .rule-example { fill: #89d1bf; font-family: "SFMono-Regular", Consolas, monospace; font-size: 10px; font-weight: 800; }
 .canvas-svg .status-label { pointer-events: none; }
 .canvas-svg .status-label rect { filter: none; }
 
 @media (max-width: 760px) {
-  .canvas-head { flex-basis: 42px; padding-inline: 10px; }
-  .canvas-kicker { display: none; }
+  .canvas-head { flex-basis: 35px; padding-inline: 8px; }
   .canvas-head-status { display: none; }
-  .canvas-legend { top: 8px; right: 8px; gap: 6px; padding: 5px 7px; font-size: 0.58rem; }
+  .step-explanation { min-height: 25px; padding: 4px 8px; font-size: .6rem; gap: 5px; }
+  .canvas-legend { top: 6px; right: 6px; gap: 4px; padding: 3px 5px; font-size: .52rem; }
   .canvas-tip { display: none; }
-  .canvas-controls { right: 8px; bottom: 8px; }
 }

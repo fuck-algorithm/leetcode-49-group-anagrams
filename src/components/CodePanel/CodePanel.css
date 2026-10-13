@@ -1,109 +1,116 @@
 .code-panel {
   display: flex;
   flex-direction: column;
-  background-color: #1e1e1e;
-  border-radius: 8px;
-  overflow: hidden;
   height: 100%;
+  overflow: hidden;
+  background: #172235;
+  border: 1px solid #283a53;
+  border-radius: 10px;
+  box-shadow: 0 9px 24px rgba(22, 34, 53, 0.12);
 }
 
 .code-panel-header {
   display: flex;
-  justify-content: space-between;
   align-items: center;
-  padding: 6px 12px;
-  background-color: #2d2d2d;
-  border-bottom: 1px solid #3d3d3d;
+  justify-content: space-between;
+  min-height: 44px;
+  padding: 0 12px 0 14px;
+  background: #1d2b40;
+  border-bottom: 1px solid #30435e;
 }
 
 .language-tabs {
   display: flex;
-  gap: 4px;
+  align-items: center;
+  gap: 3px;
 }
 
 .language-tab {
-  padding: 4px 10px;
-  font-size: 0.75rem;
-  font-weight: 500;
-  color: #888;
-  background-color: transparent;
+  padding: 6px 10px;
+  color: #8292a9;
+  background: transparent;
   border: 1px solid transparent;
-  border-radius: 4px;
+  border-radius: 5px;
   cursor: pointer;
-  transition: all 0.2s;
+  font-size: 0.72rem;
+  transition: color 160ms ease, background-color 160ms ease, border-color 160ms ease;
 }
 
 .language-tab:hover {
-  color: #e0e0e0;
-  background-color: #3d3d3d;
+  color: #dce7f5;
+  background: #263953;
 }
 
 .language-tab.active {
-  color: #e0e0e0;
-  background-color: #0d6efd;
-  border-color: #0d6efd;
+  color: #ffffff;
+  background: #2c6edb;
+  border-color: #4c8cec;
 }
 
 .code-panel-subtitle {
-  font-size: 0.75rem;
-  color: #888;
+  color: #8292a9;
+  font-size: 0.7rem;
 }
 
 .code-container {
-  flex: 1;
-  overflow: auto;
   display: flex;
+  flex: 1;
   flex-direction: column;
   min-height: 0;
+  overflow: auto;
 }
 
 .code-pre {
-  margin: 0;
-  padding: 12px 0;
-  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', 'Consolas', monospace;
-  font-size: 0.8rem;
-  line-height: 1.5;
-  overflow-x: auto;
   flex: 1;
   min-height: 0;
+  margin: 0;
+  padding: 16px 0 22px;
+  overflow-x: auto;
+  color: #dce7f5;
+  font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+  font-size: 0.79rem;
+  line-height: 1.65;
 }
 
 .code-line {
   display: flex;
   align-items: flex-start;
-  padding: 0 12px;
-  min-height: 1.5em;
-  transition: background-color 0.2s;
+  min-height: 1.65em;
+  padding: 0 14px;
+  border-left: 3px solid transparent;
+  transition: background-color 180ms ease, border-color 180ms ease;
 }
 
 .code-line-highlighted {
-  background-color: rgba(255, 255, 0, 0.15);
-  border-left: 3px solid #ffd700;
-  padding-left: 9px;
+  padding-left: 11px;
+  background: rgba(72, 139, 255, 0.15);
+  border-left-color: #f7c948;
 }
 
 .line-number {
   display: inline-block;
+  flex-shrink: 0;
   width: 2em;
-  margin-right: 12px;
-  color: #6e7681;
+  margin-right: 13px;
+  color: #63758e;
   text-align: right;
   user-select: none;
-  flex-shrink: 0;
 }
 
 .line-content {
   flex: 1;
+  min-width: max-content;
   white-space: pre;
 }
 
 .variable-display {
-  margin-left: 16px;
-  padding: 2px 8px;
-  font-size: 0.7rem;
-  color: #4ec9b0;
-  background-color: rgba(78, 201, 176, 0.15);
-  border-radius: 3px;
-  white-space: nowrap;
   flex-shrink: 0;
+  margin: 1px 0 1px 14px;
+  padding: 2px 7px;
+  color: #82e6c4;
+  background: rgba(64, 190, 154, 0.12);
+  border: 1px solid rgba(64, 190, 154, 0.2);
+  border-radius: 4px;
+  font-size: 0.68rem;
+  white-space: nowrap;
 }

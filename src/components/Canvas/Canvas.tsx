@@ -1,14 +1,12 @@
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import * as d3 from 'd3';
 import type { AlgorithmStep } from '../../types';
-import { 
-  COLORS, 
+import {
+  COLORS,
   ANIMATION_CONFIG,
   createGlowFilter,
   createArrowMarker,
-  drawStatusLabel,
-  drawBezierArrow,
-  drawStraightArrow,
+  drawParticleAlongPath,
 } from '../../utils/canvasAnimations';
 import './Canvas.css';
 
@@ -16,681 +14,533 @@ interface CanvasProps {
   currentStep: AlgorithmStep | null;
 }
 
+const PADDING = 24;
+const GAP = 16;
+const INPUT_LANE = { y: 40, height: 116 };
+const CHAR_LANE = { height: 142 };
+const MIN_HEIGHT = 640;
+const ROW_HEIGHT = 64;
+const BOX_HEIGHT = 34;
+
 export function Canvas({ currentStep }: CanvasProps) {
   const svgRef = useRef<SVGSVGElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
-  const [prevStep, setPrevStep] = useState<AlgorithmStep | null>(null);
+  const [dimensions, setDimensions] = useState({ width: 800, height: MIN_HEIGHT });
+  const [transform, setTransform] = useState(d3.zoomIdentity);
+  const previousStepRef = useRef<AlgorithmStep | null>(null);
 
   useEffect(() => {
-    if (!svgRef.current || !containerRef.current || !currentStep) return;
-
-    const svg = d3.select(svgRef.current);
     const container = containerRef.current;
-    const width = container.clientWidth;
-    const height = container.clientHeight;
+    if (!container) return;
 
-    svg.selectAll('*').remove();
-    svg.attr('width', width).attr('height', height);
-
-    const mainGroup = svg.append('g').attr('class', 'main-group');
-
-    // 创建滤镜和标记
-    const defs = svg.append('defs');
-    createGlowFilter(defs, 'glow-warning', COLORS.warning);
-    createGlowFilter(defs, 'glow-primary', COLORS.primary);
-    createGlowFilter(defs, 'glow-success', COLORS.success);
-    createArrowMarker(defs, 'arrow', COLORS.gray);
-    createArrowMarker(defs, 'arrow-primary', COLORS.primary);
-    createArrowMarker(defs, 'arrow-warning', COLORS.warning);
-    createArrowMarker(defs, 'arrow-success', COLORS.success);
-    createArrowMarker(defs, 'arrow-info', COLORS.info);
-
-    const zoom = d3.zoom<SVGSVGElement, unknown>()
-      .scaleExtent([0.5, 3])
-      .on('zoom', (event) => {
-        mainGroup.attr('transform', event.transform);
+    const observer = new ResizeObserver(([entry]) => {
+      if (!entry) return;
+      setDimensions({
+        width: entry.contentRect.width,
+        height: entry.contentRect.height,
       });
+    });
+
+    observer.observe(container);
+    return () => observer.disconnect();
+  }, []);
+
+  useEffect(() => {
+    if (!svgRef.current) return;
+    const svg = d3.select(svgRef.current);
+    const zoom = d3.zoom<SVGSVGElement, unknown>()
+      .scaleExtent([0.7, 2.4])
+      .on('zoom', (event) => setTransform(event.transform));
 
     svg.call(zoom);
+    return () => {
+      svg.on('.zoom', null);
+    };
+  }, []);
 
-    drawVisualization(mainGroup, currentStep, width, prevStep);
-    setPrevStep(currentStep);
+  const getLayout = useCallback(() => {
+    const minGroupsHeight = 42 + Math.max(currentStep?.groups.size ?? 0, 1) * ROW_HEIGHT + 18;
+    const available = Math.max(MIN_HEIGHT, dimensions.height);
+    const charY = INPUT_LANE.y + INPUT_LANE.height + GAP;
+    const groupsY = charY + CHAR_LANE.height + GAP;
+    const canvasHeight = Math.max(available, groupsY + minGroupsHeight + 24);
+    const groupsHeight = Math.max(minGroupsHeight, canvasHeight - groupsY - 24);
+    const largestGroup = Math.max(0, ...Array.from(currentStep?.groups.values() ?? [], (values) => values.length));
+    const inputWidth = currentStep
+      ? currentStep.inputArray.length * 74 - 10 + PADDING * 2 + 32
+      : dimensions.width;
+    const groupWidth = PADDING * 2 + 8 + 86 + 18 + largestGroup * 64 + Math.max(0, largestGroup - 1) * 9 + 24;
+    const canvasWidth = Math.max(dimensions.width, inputWidth, groupWidth);
 
-  }, [currentStep]);
+    return { charY, groupsY, groupsHeight, canvasHeight, canvasWidth };
+  }, [currentStep, dimensions.height, dimensions.width]);
+
+  useEffect(() => {
+    if (!svgRef.current || !currentStep) return;
+
+    const svg = d3.select(svgRef.current);
+    svg.selectAll('*').remove();
+
+    const defs = svg.append('defs');
+    createGlowFilter(defs, 'glow-current', COLORS.warning, 2.5);
+    createGlowFilter(defs, 'glow-key', COLORS.success, 2.5);
+    createGlowFilter(defs, 'glow-value', COLORS.primary, 2.5);
+    createArrowMarker(defs, 'arrow-info', COLORS.info);
+    createArrowMarker(defs, 'arrow-success', COLORS.success);
+    createArrowMarker(defs, 'arrow-primary', COLORS.primary);
+
+    const layout = getLayout();
+    const width = layout.canvasWidth;
+    const height = layout.canvasHeight;
+    svg.attr('width', width).attr('height', height);
+
+    const root = svg.append('g')
+      .attr('class', 'viz-layer')
+      .attr('transform', transform.toString());
+
+    root.append('rect')
+      .attr('class', 'canvas-surface')
+      .attr('width', width)
+      .attr('height', height)
+      .attr('fill', '#fbfcfe');
+
+    const animate = !previousStepRef.current || previousStepRef.current.stepIndex !== currentStep.stepIndex;
+    drawInputLane(root, currentStep, width, animate);
+    drawCharLane(root, currentStep, width, layout.charY, animate);
+    drawGroupsLane(root, currentStep, width, layout.groupsY, animate, layout.groupsHeight);
+    previousStepRef.current = currentStep;
+  }, [currentStep, dimensions, transform, getLayout]);
+
+  const handleZoom = (factor: number) => {
+    const svg = d3.select(svgRef.current!);
+    svg.transition().duration(220).call(d3.zoom<SVGSVGElement, unknown>().scaleBy as never, factor);
+  };
+
+  const handleZoomReset = () => {
+    const svg = d3.select(svgRef.current!);
+    svg.transition().duration(220).call(
+      d3.zoom<SVGSVGElement, unknown>().transform as never,
+      d3.zoomIdentity,
+    );
+  };
+
+  const layout = getLayout();
+  const needsScroll = layout.canvasHeight > dimensions.height + 2;
+  const needsHorizontalScroll = layout.canvasWidth > dimensions.width + 2;
 
   return (
-    <div className="canvas-container" ref={containerRef}>
-      <svg ref={svgRef} className="canvas-svg" />
+    <div className="canvas-wrap">
+      <div className="canvas-head">
+        <div className="canvas-head-title">
+          <span className="canvas-kicker">EXECUTION TRACE</span>
+          <strong>分组状态</strong>
+        </div>
+        <div className="canvas-head-meta">
+          <span className="canvas-step-chip">
+            {currentStep ? `STEP ${String(currentStep.stepIndex + 1).padStart(2, '0')}` : 'READY'}
+          </span>
+          <span className="canvas-head-status">
+            {currentStep?.currentString ? `正在处理 "${currentStep.currentString}"` : '等待运行'}
+          </span>
+        </div>
+      </div>
+
+      <div
+        className={`canvas-container ${needsScroll ? 'canvas-scroll' : ''} ${needsHorizontalScroll ? 'canvas-scroll-x' : ''}`}
+        ref={containerRef}
+      >
+        <div className="canvas-viewport">
+          <svg ref={svgRef} className="canvas-svg" role="img" aria-label="字母异位词分组执行轨迹" />
+        </div>
+
+        <div className="canvas-legend" aria-label="状态图例">
+          <span className="legend-item"><span className="legend-swatch current" />当前字符串</span>
+          <span className="legend-item"><span className="legend-swatch key" />分组 key</span>
+          <span className="legend-item"><span className="legend-swatch value" />已归档</span>
+        </div>
+
+        <div className="canvas-controls" aria-label="画布缩放控制">
+          <button className="canvas-control-btn" onClick={() => handleZoom(1.25)} title="放大">＋</button>
+          <button className="canvas-control-btn" onClick={() => handleZoom(0.8)} title="缩小">−</button>
+          <button className="canvas-control-btn" onClick={handleZoomReset} title="重置缩放">⟳</button>
+        </div>
+      </div>
+      <div className="canvas-tip">拖拽画布平移 · 滚轮缩放 · 时间轴可拖动定位</div>
     </div>
   );
 }
 
-function drawVisualization(
-  group: d3.Selection<SVGGElement, unknown, null, undefined>,
+function drawInputLane(
+  root: d3.Selection<SVGGElement, unknown, null, undefined>,
   step: AlgorithmStep,
-  containerWidth: number,
-  prevStep: AlgorithmStep | null
+  width: number,
+  animate: boolean,
 ) {
-  const padding = 30;
-  const boxWidth = 55;
-  const boxHeight = 28;
-  const boxGap = 8;
-  const charBoxSize = 24;
+  const x = PADDING;
+  const laneWidth = width - PADDING * 2;
+  const boxWidth = 64;
+  const boxGap = 10;
+  const arrayWidth = step.inputArray.length * (boxWidth + boxGap) - boxGap;
+  const startX = x + Math.max(0, (laneWidth - arrayWidth) / 2);
+  const arrayY = INPUT_LANE.y + 50;
 
-  // 检测是否有新增内容
-  const isNewStep = !prevStep || prevStep.stepIndex !== step.stepIndex;
-  const hasNewGroup = prevStep && step.groups.size > prevStep.groups.size;
-
-  // 绘制步骤描述（顶部）
-  drawStepDescription(group, step, containerWidth, isNewStep);
-
-  // 绘制输入数组区域
-  drawInputArraySection(group, step, padding, boxWidth, boxHeight, boxGap, isNewStep);
-
-  // 绘制字符数组处理区域
-  const charArrayY = drawCharArraySection(group, step, padding, boxWidth, boxHeight, boxGap, charBoxSize, containerWidth, isNewStep);
-  const charArrayCenterX = containerWidth / 2 - 50;
-
-  // 绘制分组结果区域
-  drawGroupsSection(group, step, padding, boxWidth, boxHeight, boxGap, charArrayY, isNewStep, hasNewGroup, charArrayCenterX, charArrayY);
-}
-
-// 绘制输入数组区域
-function drawInputArraySection(
-  group: d3.Selection<SVGGElement, unknown, null, undefined>,
-  step: AlgorithmStep,
-  padding: number,
-  boxWidth: number,
-  boxHeight: number,
-  boxGap: number,
-  animate: boolean
-) {
-  const inputArray = step.inputArray;
-  const startY = 120;
-
-  // 标题带图标
-  const titleGroup = group.append('g').attr('transform', `translate(${padding}, ${startY})`);
-  
-  titleGroup.append('text')
-    .attr('x', 0)
-    .attr('y', 0)
-    .style('font-size', '14px')
-    .text('📋');
-  
-  titleGroup.append('text')
-    .attr('x', 22)
-    .attr('y', 0)
-    .style('font-size', '13px')
-    .style('font-weight', '600')
-    .style('fill', COLORS.text)
-    .text('输入数组 strs[]');
-
-  // 绘制数组元素
-  const arrayY = startY + 30;
-  inputArray.forEach((str, i) => {
-    const x = padding + i * (boxWidth + boxGap);
-    const isHighlighted = step.highlightedElements.includes(str) && str === step.currentString;
-
-    // 索引标签
-    group.append('text')
-      .attr('x', x + boxWidth / 2)
-      .attr('y', arrayY - 8)
-      .attr('text-anchor', 'middle')
-      .style('font-size', '10px')
-      .style('fill', COLORS.textLight)
-      .text(`[${i}]`);
-
-    // 元素框
-    const rect = group.append('rect')
-      .attr('x', x)
-      .attr('y', arrayY)
-      .attr('width', boxWidth)
-      .attr('height', boxHeight)
-      .attr('rx', 6)
-      .style('fill', isHighlighted ? COLORS.warningLight : COLORS.grayLight)
-      .style('stroke', isHighlighted ? COLORS.warning : '#d1d5db')
-      .style('stroke-width', isHighlighted ? 2 : 1)
-      .style('transition', 'all 0.3s ease');
-
-    // 高亮时添加发光效果
-    if (isHighlighted) {
-      rect.style('filter', 'url(#glow-warning)');
-    }
-
-    // 元素文字
-    group.append('text')
-      .attr('x', x + boxWidth / 2)
-      .attr('y', arrayY + boxHeight / 2 + 4)
-      .attr('text-anchor', 'middle')
-      .style('font-size', '12px')
-      .style('font-family', "'Monaco', 'Menlo', monospace")
-      .style('fill', isHighlighted ? '#92400e' : COLORS.text)
-      .style('font-weight', isHighlighted ? '600' : 'normal')
-      .text(`"${str}"`);
+  drawLane(root, {
+    x,
+    y: INPUT_LANE.y,
+    width: laneWidth,
+    height: INPUT_LANE.height,
+    title: '输入数组  strs[]',
+    accent: '#4b82d8',
+    fill: '#f4f8fd',
   });
 
-  // 当前处理指示器
-  if (step.currentString !== undefined) {
-    const currentIndex = inputArray.indexOf(step.currentString);
-    if (currentIndex >= 0) {
-      const arrowX = padding + currentIndex * (boxWidth + boxGap) + boxWidth / 2;
-      const arrowY = arrayY + boxHeight + 18;
+  step.inputArray.forEach((value, index) => {
+    const itemX = startX + index * (boxWidth + boxGap);
+    const isCurrent = value === step.currentString && step.highlightedElements.includes(value);
+    const rect = root.append('rect')
+      .attr('class', `input-item${isCurrent ? ' is-current' : ''}`)
+      .attr('x', itemX)
+      .attr('y', arrayY)
+      .attr('width', boxWidth)
+      .attr('height', BOX_HEIGHT)
+      .attr('rx', 6)
+      .style('fill', isCurrent ? '#fff5d9' : '#ffffff')
+      .style('stroke', isCurrent ? '#e1a533' : '#cbd7e6')
+      .style('stroke-width', isCurrent ? 2 : 1);
 
-      // 指示箭头（带动画）
-      const arrow = group.append('path')
-        .attr('d', `M ${arrowX} ${arrowY} L ${arrowX - 6} ${arrowY + 10} L ${arrowX + 6} ${arrowY + 10} Z`)
-        .style('fill', COLORS.warning);
-
-      if (animate) {
-        arrow
-          .style('opacity', 0)
-          .attr('transform', `translate(0, -5)`)
-          .transition()
-          .duration(ANIMATION_CONFIG.duration.fast)
-          .style('opacity', 1)
-          .attr('transform', 'translate(0, 0)');
-      }
-
-      // 操作标签
-      const actionLabel = getActionLabel(step);
-      if (actionLabel) {
-        const labelWidth = Math.max(actionLabel.length * 7 + 20, 80);
-        
-        const labelGroup = group.append('g')
-          .attr('transform', `translate(${arrowX - labelWidth / 2}, ${arrowY + 18})`);
-
-        labelGroup.append('rect')
-          .attr('width', labelWidth)
-          .attr('height', 22)
-          .attr('rx', 11)
-          .style('fill', COLORS.primary);
-
-        labelGroup.append('text')
-          .attr('x', labelWidth / 2)
-          .attr('y', 14)
-          .attr('text-anchor', 'middle')
-          .style('font-size', '11px')
-          .style('fill', COLORS.white)
-          .style('font-weight', '500')
-          .text(actionLabel);
-
-        if (animate) {
-          labelGroup
-            .style('opacity', 0)
-            .transition()
-            .duration(ANIMATION_CONFIG.duration.normal)
-            .style('opacity', 1);
-        }
-      }
-    }
-  }
-}
-
-// 绘制字符数组处理区域
-function drawCharArraySection(
-  group: d3.Selection<SVGGElement, unknown, null, undefined>,
-  step: AlgorithmStep,
-  padding: number,
-  boxWidth: number,
-  boxHeight: number,
-  boxGap: number,
-  charBoxSize: number,
-  containerWidth: number,
-  animate: boolean
-): number {
-  const variables = step.variables as Record<string, unknown>;
-  const array = variables.array as string[] | undefined;
-  const description = step.description;
-  
-  if (!array || (!description.includes('字符数组') && !description.includes('排序'))) {
-    return 180;
-  }
-
-  const sectionY = 260;
-  const centerX = containerWidth / 2 - 50;
-
-  // 绘制从输入数组到字符数组的箭头
-  if (description.includes('转换为字符数组') && step.currentString) {
-    const inputIndex = step.inputArray.indexOf(step.currentString);
-    if (inputIndex >= 0) {
-      const startX = padding + inputIndex * (boxWidth + boxGap) + boxWidth / 2;
-      const startY = 120 + 30 + boxHeight;
-      const endX = centerX;
-      const endY = sectionY + 30;
-      drawBezierArrow(group, startX, startY, endX, endY, COLORS.info, animate);
-    }
-  }
-
-  // 区域背景（带动画）
-  const bgRect = group.append('rect')
-    .attr('x', padding - 10)
-    .attr('y', sectionY - 10)
-    .attr('width', containerWidth - padding * 2 + 20)
-    .attr('height', 85)
-    .attr('rx', 8)
-    .style('fill', '#f0f9ff')
-    .style('stroke', '#bae6fd')
-    .style('stroke-width', 1);
-
-  if (animate) {
-    bgRect
-      .style('opacity', 0)
-      .transition()
-      .duration(ANIMATION_CONFIG.duration.fast)
-      .style('opacity', 1);
-  }
-
-  // 标题
-  const titleGroup = group.append('g').attr('transform', `translate(${padding}, ${sectionY + 5})`);
-  const isSorting = description.includes('排序');
-  
-  titleGroup.append('text')
-    .attr('x', 0)
-    .attr('y', 0)
-    .style('font-size', '14px')
-    .text(isSorting ? '🔄' : '✂️');
-
-  titleGroup.append('text')
-    .attr('x', 22)
-    .attr('y', 0)
-    .style('font-size', '12px')
-    .style('font-weight', '600')
-    .style('fill', COLORS.info)
-    .text(isSorting ? '排序字符' : '拆分字符');
-
-  // 添加状态标签
-  if (isSorting) {
-    drawStatusLabel(group, centerX + 80, sectionY - 5, 'sorting', animate);
-  }
-
-  // 绘制字符数组
-  const charArrayX = centerX - (array.length * (charBoxSize + 4)) / 2;
-  const charArrayY = sectionY + 30;
-
-  array.forEach((char, i) => {
-    const x = charArrayX + i * (charBoxSize + 4);
-    
-    const charRect = group.append('rect')
-      .attr('x', x)
-      .attr('y', charArrayY)
-      .attr('width', charBoxSize)
-      .attr('height', charBoxSize)
-      .attr('rx', 4)
-      .style('fill', COLORS.infoLight)
-      .style('stroke', COLORS.info)
-      .style('stroke-width', 1);
-
-    const charText = group.append('text')
-      .attr('x', x + charBoxSize / 2)
-      .attr('y', charArrayY + charBoxSize / 2 + 4)
+    root.append('text')
+      .attr('class', 'array-index')
+      .attr('x', itemX + boxWidth / 2)
+      .attr('y', arrayY - 8)
       .attr('text-anchor', 'middle')
-      .style('font-size', '13px')
-      .style('font-family', "'Monaco', 'Menlo', monospace")
-      .style('fill', '#0e7490')
-      .style('font-weight', '600')
-      .text(char);
+      .text(`[${index}]`);
 
-    // 字符动画
-    if (animate) {
-      charRect
-        .style('opacity', 0)
-        .attr('transform', `translate(0, -10)`)
-        .transition()
-        .delay(i * 50)
-        .duration(ANIMATION_CONFIG.duration.fast)
-        .style('opacity', 1)
-        .attr('transform', 'translate(0, 0)');
+    root.append('text')
+      .attr('class', `array-value${isCurrent ? ' current' : ''}`)
+      .attr('x', itemX + boxWidth / 2)
+      .attr('y', arrayY + 22)
+      .attr('text-anchor', 'middle')
+      .text(`"${value}"`);
 
-      charText
-        .style('opacity', 0)
+    if (animate && isCurrent) {
+      rect
+        .style('opacity', 0.72)
         .transition()
-        .delay(i * 50 + 100)
         .duration(ANIMATION_CONFIG.duration.fast)
         .style('opacity', 1);
     }
   });
 
-  // 排序结果提示
-  if (isSorting) {
-    const sortedStr = array.join('');
-    group.append('text')
-      .attr('x', centerX)
-      .attr('y', charArrayY + charBoxSize + 18)
-      .attr('text-anchor', 'middle')
-      .style('font-size', '11px')
-      .style('fill', COLORS.info)
-      .text(`排序结果: "${sortedStr}"`);
-    
-    // 添加从排序结果到分组键的箭头
-    if (step.currentKey && animate) {
-      const startX = centerX;
-      const startY = charArrayY + charBoxSize + 18;
-      const endX = centerX;
-      const endY = charArrayY + charBoxSize + 35;
-      drawStraightArrow(group, startX, startY, endX, endY, COLORS.success, animate, '生成 key');
+  if (step.currentString) {
+    const index = step.inputArray.indexOf(step.currentString);
+    if (index >= 0) {
+      const markerX = startX + index * (boxWidth + boxGap) + boxWidth / 2;
+      root.append('line')
+        .attr('class', 'current-marker')
+        .attr('x1', markerX)
+        .attr('x2', markerX)
+        .attr('y1', arrayY + BOX_HEIGHT + 5)
+        .attr('y2', arrayY + BOX_HEIGHT + 13)
+        .style('stroke', '#d18b1e')
+        .style('stroke-width', 2)
+        .attr('marker-end', 'url(#arrow-primary)');
     }
   }
-
-  return sectionY + 110;
 }
 
-// 绘制分组结果区域
-function drawGroupsSection(
-  group: d3.Selection<SVGGElement, unknown, null, undefined>,
+function drawCharLane(
+  root: d3.Selection<SVGGElement, unknown, null, undefined>,
   step: AlgorithmStep,
-  padding: number,
-  boxWidth: number,
-  boxHeight: number,
-  boxGap: number,
-  startY: number,
+  width: number,
+  y: number,
   animate: boolean,
-  _hasNewGroup: boolean | null,
-  charArrayCenterX: number,
-  charArrayY: number
-) {
-  const groups = step.groups;
-  const groupBoxWidth = 70;
-  const rowHeight = 60;
+): void {
+  const variables = step.variables as Record<string, unknown>;
+  const phase = getTransformPhase(step);
+  const array = variables.array as string[] | undefined;
+  const displayChars = phase.kind === 'idle' ? ['a', 'e', 't'] : phase.chars;
+  const x = PADDING;
+  const laneWidth = width - PADDING * 2;
+  const centerX = width / 2;
+  const isSorting = phase.kind === 'sorting';
+  const hasKey = Boolean(step.currentKey);
+  const sortedChars = phase.chars.slice().sort();
+  const shownChars = hasKey ? sortedChars : displayChars;
+  const boxSize = 30;
+  const gap = 7;
+  const arrayX = centerX - (shownChars.length * (boxSize + gap) - gap) / 2;
+  const arrayY = y + 54;
 
-  // 标题带图标
-  const titleGroup = group.append('g').attr('transform', `translate(${padding}, ${startY})`);
-  
-  titleGroup.append('text')
-    .attr('x', 0)
-    .attr('y', 0)
-    .style('font-size', '14px')
-    .text('🗂️');
+  drawLane(root, {
+    x,
+    y,
+    width: laneWidth,
+    height: CHAR_LANE.height,
+    title: phase.title,
+    accent: '#279b9a',
+    fill: '#f3faf9',
+    status: phase.status,
+  });
 
-  titleGroup.append('text')
-    .attr('x', 22)
-    .attr('y', 0)
-    .style('font-size', '13px')
-    .style('font-weight', '600')
-    .style('fill', COLORS.text)
-    .text('分组结果 HashMap<String, List>');
+  shownChars.forEach((char, index) => {
+    const itemX = arrayX + index * (boxSize + gap);
+    const rect = root.append('rect')
+      .attr('class', 'char-item')
+      .attr('x', itemX)
+      .attr('y', arrayY)
+      .attr('width', boxSize)
+      .attr('height', boxSize)
+      .attr('rx', 5)
+      .style('fill', isSorting ? '#e3f4f1' : '#eef9f8')
+      .style('stroke', '#6bbab1')
+      .style('stroke-width', 1.2);
 
-  // 空状态
-  if (groups.size === 0) {
-    group.append('rect')
-      .attr('x', padding)
-      .attr('y', startY + 25)
-      .attr('width', 120)
-      .attr('height', 32)
-      .attr('rx', 6)
-      .style('fill', '#f9fafb')
-      .style('stroke', '#e5e7eb')
-      .style('stroke-dasharray', '4,2');
-
-    group.append('text')
-      .attr('x', padding + 60)
-      .attr('y', startY + 45)
+    root.append('text')
+      .attr('class', 'char-value')
+      .attr('x', itemX + boxSize / 2)
+      .attr('y', arrayY + 20)
       .attr('text-anchor', 'middle')
-      .style('font-size', '12px')
-      .style('fill', '#9ca3af')
-      .text('空 HashMap');
+      .text(char);
+
+    if (animate && isSorting) {
+      rect
+        .style('opacity', 0.72)
+        .transition()
+        .delay(index * 28)
+        .duration(ANIMATION_CONFIG.duration.fast)
+        .style('opacity', 1);
+    }
+  });
+
+  if (phase.kind === 'splitting') {
+    root.append('text')
+      .attr('class', 'transform-note')
+      .attr('x', centerX)
+      .attr('y', arrayY + boxSize + 25)
+      .attr('text-anchor', 'middle')
+      .text('字符拆分完成，接下来按字母顺序排序');
+  } else if (phase.kind === 'sorting' || phase.kind === 'key') {
+    root.append('text')
+      .attr('class', 'transform-result')
+      .attr('x', centerX)
+      .attr('y', arrayY + boxSize + 25)
+      .attr('text-anchor', 'middle')
+      .text(phase.kind === 'key' ? `key = "${step.currentKey}"` : `排序结果  "${sortedChars.join('')}"`);
+  }
+
+  if (array && step.currentString && (phase.kind === 'splitting' || phase.kind === 'sorting') && animate) {
+    const inputIndex = step.inputArray.indexOf(step.currentString);
+    if (inputIndex >= 0) {
+      const inputBoxWidth = 64;
+      const inputGap = 10;
+      const totalWidth = step.inputArray.length * (inputBoxWidth + inputGap) - inputGap;
+      const inputStartX = PADDING + Math.max(0, (width - PADDING * 2 - totalWidth) / 2);
+      const startX = inputStartX + inputIndex * (inputBoxWidth + inputGap) + inputBoxWidth / 2;
+      const startY = INPUT_LANE.y + 50 + BOX_HEIGHT;
+      drawParticleAlongPath(root, startX, startY, centerX, arrayY - 5, COLORS.info, 560);
+    }
+  }
+}
+
+function getTransformPhase(step: AlgorithmStep): {
+  kind: 'idle' | 'splitting' | 'sorting' | 'key' | 'lookup' | 'append';
+  chars: string[];
+  title: string;
+  status: string;
+} {
+  const variables = step.variables as Record<string, unknown>;
+  const array = variables.array as string[] | undefined;
+  const fromCurrent = step.currentString?.split('') ?? [];
+  const chars = array ?? fromCurrent;
+  const description = step.description;
+
+  if (description.includes('排序字符数组')) {
+    return { kind: 'sorting', chars, title: '排序后的字符', status: 'SORT' };
+  }
+  if (description.includes('字符数组')) {
+    return { kind: 'splitting', chars, title: '拆分后的字符', status: 'SPLIT' };
+  }
+  if (description.includes('生成分组键')) {
+    return { kind: 'key', chars, title: '排序后的字符', status: 'KEY READY' };
+  }
+  if (description.includes('已存在于map中') || description.includes('不存在，需要创建')) {
+    return { kind: 'lookup', chars, title: '排序后的字符', status: 'LOOKUP' };
+  }
+  if (description.includes('添加到键') || description.includes('创建新的空列表')) {
+    return { kind: 'append', chars, title: '排序后的字符', status: 'APPEND' };
+  }
+  return { kind: 'idle', chars, title: '字符处理', status: 'WAITING' };
+}
+
+function drawGroupsLane(
+  root: d3.Selection<SVGGElement, unknown, null, undefined>,
+  step: AlgorithmStep,
+  width: number,
+  y: number,
+  animate: boolean,
+  groupsHeight: number,
+) {
+  const laneWidth = width - PADDING * 2;
+  const rowHeight = ROW_HEIGHT;
+  const keyWidth = 86;
+  const valueWidth = 64;
+  const valueGap = 9;
+
+  drawLane(root, {
+    x: PADDING,
+    y,
+    width: laneWidth,
+    height: groupsHeight,
+    title: '最终分组  map[key]',
+    accent: '#2b9b73',
+    fill: '#f5faf8',
+    status: step.groups.size ? `${step.groups.size} GROUP${step.groups.size === 1 ? '' : 'S'}` : 'EMPTY',
+  });
+
+  if (step.groups.size === 0) {
+    root.append('text')
+      .attr('class', 'empty-state')
+      .attr('x', width / 2)
+      .attr('y', y + Math.max(84, groupsHeight * 0.46))
+      .attr('text-anchor', 'middle')
+      .text('当前还没有分组 · 下一步将创建第一个 key');
     return;
   }
 
-  // 绘制每个分组
-  let rowIndex = 0;
-  groups.forEach((strings, key) => {
-    const groupY = startY + 40 + rowIndex * rowHeight;
-    const groupX = padding;
+  let row = 0;
+  step.groups.forEach((values, key) => {
+    const rowY = y + 44 + row * rowHeight;
+    const keyX = PADDING + 8;
+    const valuesX = keyX + keyWidth + 18;
     const isCurrentKey = key === step.currentKey;
 
-    // 添加从排序结果到 key 的箭头（查找 key）
-    if (isCurrentKey && (step.description.includes('已存在于map中') || step.description.includes('不存在，需要创建'))) {
-      const startX = charArrayCenterX;
-      const startYPos = charArrayY + 24 + 18;
-      const endX = groupX + 35;
-      const endY = groupY + boxHeight / 2;
-      drawBezierArrow(group, startX, startYPos, endX, endY, COLORS.warning, animate);
-      
-      // 添加查找标签
-      const labelGroup = group.append('g');
-      labelGroup.append('rect')
-        .attr('x', endX - 35)
-        .attr('y', endY - 15)
-        .attr('width', 70)
-        .attr('height', 18)
-        .attr('rx', 9)
-        .style('fill', COLORS.warning);
-      
-      labelGroup.append('text')
-        .attr('x', endX)
-        .attr('y', endY - 2)
-        .attr('text-anchor', 'middle')
-        .style('font-size', '10px')
-        .style('fill', 'white')
-        .style('font-weight', '500')
-        .text('查找 key');
-    }
-
-    // Key框
-    const keyRect = group.append('rect')
-      .attr('x', groupX)
-      .attr('y', groupY)
-      .attr('width', groupBoxWidth)
-      .attr('height', boxHeight)
+    root.append('rect')
+      .attr('class', `map-key${isCurrentKey ? ' is-active' : ''}`)
+      .attr('x', keyX)
+      .attr('y', rowY)
+      .attr('width', keyWidth)
+      .attr('height', BOX_HEIGHT)
       .attr('rx', 6)
-      .style('fill', isCurrentKey ? COLORS.successLight : '#dcfce7')
-      .style('stroke', COLORS.success)
-      .style('stroke-width', isCurrentKey ? 2 : 1)
-      .style('transition', 'all 0.3s ease');
+      .style('fill', isCurrentKey ? '#e0f3ed' : '#f1f8f5')
+      .style('stroke', isCurrentKey ? '#35a183' : '#9acbb7')
+      .style('stroke-width', isCurrentKey ? 2 : 1);
 
-    if (isCurrentKey) {
-      keyRect.style('filter', 'url(#glow-success)');
-    }
-
-    // Key图标
-    group.append('text')
-      .attr('x', groupX + 8)
-      .attr('y', groupY + boxHeight / 2 + 4)
-      .style('font-size', '10px')
-      .text('🔑');
-
-    // Key文字
-    group.append('text')
-      .attr('x', groupX + 22)
-      .attr('y', groupY + boxHeight / 2 + 4)
-      .style('font-size', '11px')
-      .style('font-family', "'Monaco', 'Menlo', monospace")
-      .style('fill', '#166534')
-      .style('font-weight', isCurrentKey ? '600' : 'normal')
+    root.append('text')
+      .attr('class', 'map-key-label')
+      .attr('x', keyX + keyWidth / 2)
+      .attr('y', rowY + 22)
+      .attr('text-anchor', 'middle')
       .text(`"${key}"`);
 
-    // 添加key查找状态标签
-    if (isCurrentKey && step.description.includes('已存在于map中')) {
-      drawStatusLabel(group, groupX + groupBoxWidth / 2, groupY - 18, 'completed', animate);
-    }
-    if (isCurrentKey && step.description.includes('不存在，需要创建')) {
-      drawStatusLabel(group, groupX + groupBoxWidth / 2, groupY - 18, 'new', animate);
-    }
+    root.append('line')
+      .attr('class', 'map-connector')
+      .attr('x1', keyX + keyWidth + 7)
+      .attr('x2', valuesX - 7)
+      .attr('y1', rowY + BOX_HEIGHT / 2)
+      .attr('y2', rowY + BOX_HEIGHT / 2)
+      .attr('marker-end', 'url(#arrow-success)');
 
-    // 当前key标签
-    if (isCurrentKey && step.description.includes('生成分组键')) {
-      drawStatusLabel(group, groupX + groupBoxWidth / 2, groupY - 18, 'new', animate);
-    }
-    
-    // 添加从 key 到新列表的箭头（创建新分组时）
-    if (isCurrentKey && step.description.includes('创建新的空列表')) {
-      const startX = groupX + groupBoxWidth / 2;
-      const startY = groupY + boxHeight;
-      const endX = startX;
-      const endY = startY + 25;
-      drawStraightArrow(group, startX, startY, endX, endY, COLORS.primary, animate, '创建列表');
-    }
-
-    // 箭头
-    group.append('text')
-      .attr('x', groupX + groupBoxWidth + 8)
-      .attr('y', groupY + boxHeight / 2 + 4)
-      .style('font-size', '16px')
-      .style('fill', COLORS.gray)
-      .text('→');
-
-    // 值列表
-    const valuesX = groupX + groupBoxWidth + 28;
-    strings.forEach((str, i) => {
-      const valueX = valuesX + i * (boxWidth + boxGap);
-      const isHighlighted = step.highlightedElements.includes(str);
-      const isNewlyAdded = isHighlighted && str === step.currentString && step.description.includes('添加到');
-
-      const valueRect = group.append('rect')
+    values.forEach((value, index) => {
+      const valueX = valuesX + index * (valueWidth + valueGap);
+      const isNew = value === step.currentString && isCurrentKey && step.description.includes('添加到');
+      const valueRect = root.append('rect')
+        .attr('class', `map-value${isNew ? ' is-new' : ''}`)
         .attr('x', valueX)
-        .attr('y', groupY)
-        .attr('width', boxWidth)
-        .attr('height', boxHeight)
+        .attr('y', rowY)
+        .attr('width', valueWidth)
+        .attr('height', BOX_HEIGHT)
         .attr('rx', 6)
-        .style('fill', isHighlighted ? '#bfdbfe' : '#dbeafe')
-        .style('stroke', COLORS.primary)
-        .style('stroke-width', isHighlighted ? 2 : 1)
-        .style('transition', 'all 0.3s ease');
+        .style('fill', isNew ? '#e5efff' : '#f4f7fc')
+        .style('stroke', isNew ? '#4d83d6' : '#b9c9df')
+        .style('stroke-width', isNew ? 2 : 1);
 
-      if (isHighlighted) {
-        valueRect.style('filter', 'url(#glow-primary)');
-      }
-
-      group.append('text')
-        .attr('x', valueX + boxWidth / 2)
-        .attr('y', groupY + boxHeight / 2 + 4)
+      root.append('text')
+        .attr('class', `map-value-label${isNew ? ' is-new' : ''}`)
+        .attr('x', valueX + valueWidth / 2)
+        .attr('y', rowY + 22)
         .attr('text-anchor', 'middle')
-        .style('font-size', '11px')
-        .style('font-family', "'Monaco', 'Menlo', monospace")
-        .style('fill', '#1e40af')
-        .style('font-weight', isHighlighted ? '600' : 'normal')
-        .text(`"${str}"`);
+        .text(`"${value}"`);
 
-      // 新增标签和动画
-      if (isNewlyAdded) {
-        drawStatusLabel(group, valueX + boxWidth / 2, groupY - 18, 'adding', animate);
-        
-        // 绘制贝塞尔曲线箭头表示数据流转
-        if (animate && step.currentString) {
-          const inputIndex = step.inputArray.indexOf(step.currentString);
-          if (inputIndex >= 0) {
-            const startX = padding + inputIndex * (boxWidth + boxGap) + boxWidth / 2;
-            const startYPos = 120 + 30 + boxHeight;
-            const endX = valueX + boxWidth / 2;
-            const endY = groupY + boxHeight / 2;
-            drawBezierArrow(group, startX, startYPos, endX, endY, COLORS.primary, animate);
-            
-            // 添加"添加到分组"标签
-            const midX = (startX + endX) / 2;
-            const midY = (startYPos + endY) / 2;
-            const labelGroup = group.append('g');
-            labelGroup.append('rect')
-              .attr('x', midX - 40)
-              .attr('y', midY - 10)
-              .attr('width', 80)
-              .attr('height', 18)
-              .attr('rx', 9)
-              .style('fill', COLORS.primary);
-            
-            labelGroup.append('text')
-              .attr('x', midX)
-              .attr('y', midY + 3)
-              .attr('text-anchor', 'middle')
-              .style('font-size', '10px')
-              .style('fill', 'white')
-              .style('font-weight', '500')
-              .text('添加到分组');
-          }
-        }
+      if (isNew && animate) {
+        valueRect
+          .style('opacity', 0)
+          .attr('transform', 'translate(8, 0)')
+          .transition()
+          .duration(ANIMATION_CONFIG.duration.slow)
+          .ease(d3.easeCubicOut)
+          .style('opacity', 1)
+          .attr('transform', 'translate(0, 0)');
       }
     });
 
-    rowIndex++;
+    if (isCurrentKey && step.currentString && step.description.includes('添加到') && animate) {
+      const inputIndex = step.inputArray.indexOf(step.currentString);
+      if (inputIndex >= 0) {
+        const inputBoxWidth = 64;
+        const inputGap = 10;
+        const totalWidth = step.inputArray.length * (inputBoxWidth + inputGap) - inputGap;
+        const inputStartX = PADDING + Math.max(0, (width - PADDING * 2 - totalWidth) / 2);
+        const startX = inputStartX + inputIndex * (inputBoxWidth + inputGap) + inputBoxWidth / 2;
+        const startY = INPUT_LANE.y + 50 + BOX_HEIGHT;
+        const endX = valuesX + (values.length - 1) * (valueWidth + valueGap) + valueWidth / 2;
+        const endY = rowY + BOX_HEIGHT / 2;
+        drawParticleAlongPath(root, startX, startY, endX, endY, COLORS.primary);
+      }
+    }
+
+    row += 1;
   });
 }
 
-// 绘制步骤描述（顶部）
-function drawStepDescription(
-  group: d3.Selection<SVGGElement, unknown, null, undefined>,
-  step: AlgorithmStep,
-  containerWidth: number,
-  animate: boolean
+function drawLane(
+  root: d3.Selection<SVGGElement, unknown, null, undefined>,
+  options: {
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+    title: string;
+    accent: string;
+    fill: string;
+    status?: string;
+  },
 ) {
-  const padding = 30;
-  const startY = 15;
-  const boxHeight = 32;
-  const borderRadius = 8;
+  const { x, y, width, height, title, accent, fill, status } = options;
+  root.append('rect')
+    .attr('class', 'lane-background')
+    .attr('x', x)
+    .attr('y', y)
+    .attr('width', width)
+    .attr('height', height)
+    .attr('rx', 9)
+    .style('fill', fill)
+    .style('stroke', '#dbe5ef')
+    .style('stroke-width', 1);
 
-  // 计算文本宽度
-  const stepText = `步骤 ${step.stepIndex + 1}: ${step.description}`;
-  const textWidth = stepText.length * 8 + 60;
-  const boxWidth = Math.min(textWidth, containerWidth - padding * 2);
+  root.append('line')
+    .attr('class', 'lane-accent')
+    .attr('x1', x)
+    .attr('x2', x)
+    .attr('y1', y + 10)
+    .attr('y2', y + 32)
+    .style('stroke', accent)
+    .style('stroke-width', 3)
+    .style('stroke-linecap', 'round');
 
-  // 背景框
-  group.append('rect')
-    .attr('x', (containerWidth - boxWidth) / 2)
-    .attr('y', startY)
-    .attr('width', boxWidth)
-    .attr('height', boxHeight)
-    .attr('rx', borderRadius)
-    .style('fill', 'rgba(37, 99, 235, 0.95)')
-    .style('filter', 'drop-shadow(0 4px 12px rgba(37, 99, 235, 0.3))');
+  root.append('text')
+    .attr('class', 'lane-title')
+    .attr('x', x + 12)
+    .attr('y', y + 22)
+    .style('fill', '#3d4c62')
+    .text(title);
 
-  // 步骤索引徽章
-  const badgeWidth = 60;
-  const badgeX = (containerWidth - boxWidth) / 2;
-
-  group.append('rect')
-    .attr('x', badgeX)
-    .attr('y', startY)
-    .attr('width', badgeWidth)
-    .attr('height', boxHeight)
-    .attr('rx', borderRadius)
-    .style('fill', 'rgba(255, 255, 255, 0.2)')
-    .attr('clip-path', `inset(0px ${boxWidth - badgeWidth}px 0px 0px round ${borderRadius}px)`);
-
-  // 步骤索引文字
-  group.append('text')
-    .attr('x', badgeX + badgeWidth / 2)
-    .attr('y', startY + 20)
-    .attr('text-anchor', 'middle')
-    .style('font-size', '12px')
-    .style('font-weight', '600')
-    .style('fill', 'white')
-    .text(`步骤 ${step.stepIndex + 1}`);
-
-  // 描述文字
-  const textX = badgeX + badgeWidth + 12;
-  group.append('text')
-    .attr('x', textX)
-    .attr('y', startY + 20)
-    .style('font-size', '13px')
-    .style('font-weight', '500')
-    .style('fill', 'white')
-    .style('pointer-events', 'none')
-    .text(step.description);
-
-  // 入场动画
-  if (animate) {
-    const descGroup = group.selectAll<SVGElement, unknown>('*').filter(function() {
-      return d3.select(this).attr('x') !== undefined || d3.select(this).attr('y') !== undefined;
-    });
-
-    descGroup
-      .style('opacity', 0)
-      .transition()
-      .duration(ANIMATION_CONFIG.duration.normal)
-      .style('opacity', 1);
+  if (status) {
+    root.append('text')
+      .attr('class', 'lane-status')
+      .attr('x', x + width - 12)
+      .attr('y', y + 22)
+      .attr('text-anchor', 'end')
+      .style('fill', accent)
+      .text(status);
   }
-}
-
-// 获取操作标签
-function getActionLabel(step: AlgorithmStep): string | null {
-  const desc = step.description;
-  
-  if (desc.includes('遍历第')) return '📍 当前处理';
-  if (desc.includes('转换为字符数组')) return '✂️ 拆分字符';
-  if (desc.includes('排序字符数组')) return '🔄 排序中';
-  if (desc.includes('生成分组键')) return `🔑 key: "${step.currentKey}"`;
-  if (desc.includes('已存在于map中')) return '✓ key已存在';
-  if (desc.includes('不存在，需要创建')) return '➕ 创建新分组';
-  if (desc.includes('创建新的空列表')) return '📝 新建列表';
-  if (desc.includes('添加到键')) return '📥 添加到分组';
-  
-  return null;
 }

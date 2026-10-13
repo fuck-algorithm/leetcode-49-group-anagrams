@@ -28,7 +28,10 @@ export function ControlPanel({
   onSpeedChange,
 }: ControlPanelProps) {
   const [showSpeedMenu, setShowSpeedMenu] = useState(false);
+  const [isDragging, setIsDragging] = useState(false);
+  const [hoverStep, setHoverStep] = useState<number | null>(null);
   const speedMenuRef = useRef<HTMLDivElement>(null);
+  const progressRef = useRef<HTMLDivElement>(null);
 
   // 键盘快捷键
   const handleKeyDown = useCallback((e: KeyboardEvent) => {
@@ -76,18 +79,53 @@ export function ControlPanel({
 
   const progress = totalSteps > 0 ? (currentStep / (totalSteps - 1)) * 100 : 0;
 
-  const handleProgressClick = (e: React.MouseEvent<HTMLDivElement>) => {
-    const rect = e.currentTarget.getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    const percentage = x / rect.width;
-    const step = Math.round(percentage * (totalSteps - 1));
-    onSeek(Math.max(0, Math.min(totalSteps - 1, step)));
-  };
+  // 从鼠标位置计算步骤
+  const getStepFromEvent = useCallback((clientX: number): number | null => {
+    if (!progressRef.current || totalSteps <= 1) return null;
+    const rect = progressRef.current.getBoundingClientRect();
+    const x = clientX - rect.left;
+    const percentage = Math.max(0, Math.min(1, x / rect.width));
+    return Math.round(percentage * (totalSteps - 1));
+  }, [totalSteps]);
 
-  const handleProgressDrag = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (e.buttons !== 1) return;
-    handleProgressClick(e);
-  };
+  // 真拖拽：mousedown → window mousemove → window mouseup
+  const handleProgressMouseDown = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    const step = getStepFromEvent(e.clientX);
+    if (step !== null) {
+      setIsDragging(true);
+      onSeek(step);
+    }
+  }, [getStepFromEvent, onSeek]);
+
+  useEffect(() => {
+    if (!isDragging) return;
+
+    const handleMouseMove = (e: MouseEvent) => {
+      const step = getStepFromEvent(e.clientX);
+      if (step !== null) onSeek(step);
+    };
+
+    const handleMouseUp = () => {
+      setIsDragging(false);
+    };
+
+    window.addEventListener('mousemove', handleMouseMove);
+    window.addEventListener('mouseup', handleMouseUp);
+    document.body.style.cursor = 'grabbing';
+
+    return () => {
+      window.removeEventListener('mousemove', handleMouseMove);
+      window.removeEventListener('mouseup', handleMouseUp);
+      document.body.style.cursor = '';
+    };
+  }, [isDragging, getStepFromEvent, onSeek]);
+
+  // 悬停预览
+  const handleProgressHover = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
+    if (isDragging) return;
+    setHoverStep(getStepFromEvent(e.clientX));
+  }, [isDragging, getStepFromEvent]);
 
   const handleSpeedSelect = async (speed: number) => {
     onSpeedChange(speed);
@@ -95,12 +133,21 @@ export function ControlPanel({
     setShowSpeedMenu(false);
   };
 
+  // 少量刻度提示整体进度，避免每个算法微步骤都堆成一排噪点
+  const markerPositions = totalSteps > 1
+    ? [0, 0.25, 0.5, 0.75, 1].map((ratio) => Math.round(ratio * (totalSteps - 1)))
+    : [0];
+  const uniqueMarkerPositions = [...new Set(markerPositions)];
+
+  const tooltipStep = isDragging ? currentStep : hoverStep;
+  const tooltipLeft = progress;
+
   return (
     <div className="control-panel">
       <div className="controls-row">
         <div className="control-buttons">
-          <button 
-            className="control-button" 
+          <button
+            className="control-button"
             onClick={onReset}
             title="重置 (R)"
           >
@@ -108,9 +155,9 @@ export function ControlPanel({
             <span className="button-text">重置</span>
             <span className="shortcut-hint">R</span>
           </button>
-          
-          <button 
-            className="control-button" 
+
+          <button
+            className="control-button"
             onClick={onPrevious}
             disabled={currentStep <= 0}
             title="上一步 (←)"
@@ -119,9 +166,9 @@ export function ControlPanel({
             <span className="button-text">上一步</span>
             <span className="shortcut-hint">←</span>
           </button>
-          
-          <button 
-            className="control-button play-button" 
+
+          <button
+            className="control-button play-button"
             onClick={onPlayPause}
             title={isPlaying ? '暂停 (空格)' : '播放 (空格)'}
           >
@@ -129,9 +176,9 @@ export function ControlPanel({
             <span className="button-text">{isPlaying ? '暂停' : '播放'}</span>
             <span className="shortcut-hint">空格</span>
           </button>
-          
-          <button 
-            className="control-button" 
+
+          <button
+            className="control-button"
             onClick={onNext}
             disabled={currentStep >= totalSteps - 1}
             title="下一步 (→)"
@@ -142,7 +189,7 @@ export function ControlPanel({
           </button>
 
           <div className="speed-control" ref={speedMenuRef}>
-            <button 
+            <button
               className="control-button speed-button"
               onClick={() => setShowSpeedMenu(!showSpeedMenu)}
               title="播放速度"
@@ -166,24 +213,54 @@ export function ControlPanel({
           </div>
         </div>
 
-        <div className="step-indicator">
+        <div className={`step-indicator ${isPlaying ? 'playing' : ''}`}>
           {currentStep + 1} / {totalSteps}
+          {isPlaying && <span className="playing-dot" />}
         </div>
       </div>
 
-      <div 
-        className="progress-bar-container"
-        onClick={handleProgressClick}
-        onMouseMove={handleProgressDrag}
+      <div
+        className={`progress-bar-container ${isDragging ? 'dragging' : ''}`}
+        ref={progressRef}
+        onMouseDown={handleProgressMouseDown}
+        onMouseMove={handleProgressHover}
+        onMouseLeave={() => setHoverStep(null)}
       >
-        <div 
-          className="progress-bar-fill" 
+        {/* 轨道 */}
+        <div className="progress-track" />
+
+        {/* 已完成填充（渐变+流动动画） */}
+        <div
+          className={`progress-bar-fill ${isPlaying ? 'flowing' : ''}`}
           style={{ width: `${progress}%` }}
         />
-        <div 
-          className="progress-bar-handle"
+
+        {/* 阶段刻度 */}
+        {uniqueMarkerPositions.map((step) => (
+          <span
+            key={step}
+            className={`progress-node ${step <= currentStep ? 'done' : ''} ${step === currentStep ? 'current' : ''}`}
+            style={{ left: `${(step / Math.max(totalSteps - 1, 1)) * 100}%` }}
+          />
+        ))}
+
+        {/* 手柄 */}
+        <div
+          className={`progress-bar-handle ${isDragging ? 'dragging' : ''}`}
           style={{ left: `${progress}%` }}
         />
+
+        {/* Tooltip 气泡 */}
+        {tooltipStep !== null && (
+          <div
+            className={`progress-tooltip ${isDragging ? 'dragging' : ''}`}
+            style={{ left: `${tooltipLeft}%` }}
+          >
+            <span className="tooltip-step">{tooltipStep + 1}</span>
+            <span className="tooltip-divider">/</span>
+            <span className="tooltip-total">{totalSteps}</span>
+          </div>
+        )}
       </div>
     </div>
   );

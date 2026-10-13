@@ -1,121 +1,59 @@
 .header {
-  display: flex;
-  justify-content: space-between;
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
   align-items: center;
-  padding: 8px 16px;
-  background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
-  color: white;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  min-height: 54px;
+  padding: 0 18px;
+  color: #f8fbff;
+  background: #142033;
+  border-bottom: 1px solid #263751;
+  box-shadow: 0 3px 12px rgba(20, 32, 51, 0.14);
+  z-index: 10;
 }
 
-.header-left {
-  flex: 1;
-  display: flex;
-  align-items: center;
+.header::after {
+  content: '';
+  position: absolute;
+  right: 0;
+  bottom: -1px;
+  left: 0;
+  height: 2px;
+  background: linear-gradient(90deg, #29b6a8 0%, #3b82f6 45%, #7c6cf2 100%);
 }
 
-.back-link {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  color: white;
-  text-decoration: none;
-  font-size: 0.875rem;
-  padding: 6px 10px;
-  border-radius: 6px;
-  transition: background-color 0.2s;
-  opacity: 0.9;
-}
+.header-left,
+.header-right { display: flex; min-width: 0; align-items: center; }
+.header-left { justify-content: flex-start; }
+.header-right { justify-content: flex-end; gap: 8px; }
 
-.back-link:hover {
-  background-color: rgba(255, 255, 255, 0.2);
-  opacity: 1;
-}
-
-.back-link svg {
-  width: 16px;
-  height: 16px;
-}
-
-.header-title {
-  font-size: 1.25rem;
-  font-weight: 600;
-  color: white;
-  text-decoration: none;
-  transition: opacity 0.2s;
-  text-align: center;
-  flex-shrink: 0;
-}
-
-.header-title:hover {
-  opacity: 0.9;
-  text-decoration: underline;
-}
-
-.header-right {
-  flex: 1;
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  gap: 12px;
-}
-
+.back-link,
+.github-link,
 .algorithm-btn {
-  display: flex;
+  display: inline-flex;
   align-items: center;
-  gap: 6px;
-  background: rgba(255, 255, 255, 0.15);
-  border: 1px solid rgba(255, 255, 255, 0.3);
-  color: white;
-  padding: 6px 12px;
-  border-radius: 6px;
-  font-size: 0.875rem;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.2s;
+  border-radius: 7px;
+  transition: background-color 160ms ease, color 160ms ease, border-color 160ms ease;
 }
+.back-link { gap: 7px; padding: 7px 9px; color: #b8c5d8; font-size: 0.76rem; }
+.back-link:hover,
+.github-link:hover,
+.algorithm-btn:hover { color: #ffffff; background: #1e304a; }
+.header-title { color: #f8fbff; font-size: 1.02rem; font-weight: 700; letter-spacing: -0.02em; white-space: nowrap; }
+.header-title:hover { color: #dbeafe; }
+.algorithm-btn { gap: 6px; padding: 6px 9px; color: #d9e5f5; background: transparent; border: 1px solid #40516b; font-size: 0.72rem; cursor: pointer; }
+.algorithm-btn:hover { border-color: #6d83a4; }
+.github-link { gap: 6px; padding: 6px 8px; color: #d9e5f5; }
+.github-link svg { width: 18px; height: 18px; }
+.star-count { display: inline-flex; align-items: center; gap: 4px; padding: 2px 7px; color: #d9e5f5; background: #263751; border-radius: 999px; font-size: 0.7rem; }
+.star-icon { color: #f7c948; }
 
-.algorithm-btn:hover {
-  background: rgba(255, 255, 255, 0.25);
-  border-color: rgba(255, 255, 255, 0.5);
-}
-
-.algorithm-btn svg {
-  width: 16px;
-  height: 16px;
-}
-
-.github-link {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  color: white;
-  padding: 6px 10px;
-  border-radius: 6px;
-  transition: background-color 0.2s;
-  text-decoration: none;
-}
-
-.github-link:hover {
-  background-color: rgba(255, 255, 255, 0.2);
-}
-
-.github-link svg {
-  width: 20px;
-  height: 20px;
-}
-
-.star-count {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  font-size: 0.875rem;
-  font-weight: 500;
-  background-color: rgba(255, 255, 255, 0.2);
-  padding: 2px 8px;
-  border-radius: 10px;
-}
-
-.star-icon {
-  color: #fbbf24;
+@media (max-width: 720px) {
+  .header { min-height: 50px; padding: 0 10px; }
+  .back-link span,
+  .algorithm-btn span,
+  .github-link span { display: none; }
+  .back-link { padding-inline: 5px; }
+  .header-title { font-size: 0.9rem; }
+  .header-right { gap: 3px; }
 }

@@ -9,7 +9,7 @@ const DEFAULT_INPUT = ['eat', 'tea', 'tan', 'ate', 'nat', 'bat'];
 const BASE_INTERVAL = 1000; // 基础间隔1秒
 
 function App() {
-  // 使用useMemo初始化steps，避免在effect中调用setState
+  const [isCodeOpen, setIsCodeOpen] = useState(false);
   const initialSteps = useMemo(() => generateAlgorithmSteps(DEFAULT_INPUT), []);
   const [steps, setSteps] = useState<AlgorithmStep[]>(initialSteps);
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
@@ -76,13 +76,27 @@ function App() {
       <Header />
       <InputPanel onRun={handleRun} />
       
-      <main className="main-content">
-        <div className="code-section">
-          <CodePanel currentStep={currentStep} />
-        </div>
-        <div className="canvas-section">
+      <main className={`main-content ${isCodeOpen ? 'code-open' : ''}`}>
+        <section className="canvas-section" aria-label="算法执行画布">
           <Canvas currentStep={currentStep} />
-        </div>
+        </section>
+
+        {isCodeOpen && (
+          <aside className="code-section" aria-label="源代码">
+            <CodePanel currentStep={currentStep} />
+          </aside>
+        )}
+
+        <button
+          className={`code-toggle ${isCodeOpen ? 'active' : ''}`}
+          type="button"
+          aria-expanded={isCodeOpen}
+          onClick={() => setIsCodeOpen((open) => !open)}
+          title={isCodeOpen ? '收起代码' : '查看代码'}
+        >
+          <span aria-hidden="true">{'</>'}</span>
+          <span>{isCodeOpen ? '隐藏代码' : '查看代码'}</span>
+        </button>
       </main>
 
       <ControlPanel

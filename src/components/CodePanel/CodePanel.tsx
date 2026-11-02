@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { getSavedLanguage, saveLanguage, type ProgrammingLanguage } from '../../utils/languagePreference';
 import { Highlight, themes, Prism } from 'prism-react-renderer';
 import { 
   CODE_BY_LANGUAGE, 
@@ -35,13 +36,18 @@ const loadJavaLanguage = async () => {
 export function CodePanel({ currentStep }: CodePanelProps) {
   const [language, setLanguage] = useState<CodeLanguage>('java');
   const [languagesReady, setLanguagesReady] = useState(false);
-  
-  // 加载额外的语言支持
+
   useEffect(() => {
-    loadJavaLanguage().then(() => {
-      setLanguagesReady(true);
-    });
+    let active = true;
+    getSavedLanguage().then((saved) => { if (active) setLanguage(saved); });
+    loadJavaLanguage().then(() => { if (active) setLanguagesReady(true); });
+    return () => { active = false; };
   }, []);
+
+  const handleLanguageChange = (next: CodeLanguage) => {
+    setLanguage(next);
+    void saveLanguage(next as ProgrammingLanguage);
+  };
   
   const code = CODE_BY_LANGUAGE[language];
   const lineMap = LINE_MAP_BY_LANGUAGE[language];
@@ -122,7 +128,7 @@ export function CodePanel({ currentStep }: CodePanelProps) {
             <button
               key={lang}
               className={`language-tab ${language === lang ? 'active' : ''}`}
-              onClick={() => setLanguage(lang)}
+              onClick={() => handleLanguageChange(lang)}
             >
               {LANGUAGE_NAMES[lang]}
             </button>

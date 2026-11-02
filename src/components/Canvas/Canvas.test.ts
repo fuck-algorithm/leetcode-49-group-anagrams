@@ -1,6 +1,84 @@
-import { describe, it, expect } from 'vitest';
+import React from 'react';
+import { describe, it, expect, vi } from 'vitest';
 import * as fc from 'fast-check';
+import { act, render } from '@testing-library/react';
 import { generateAlgorithmSteps } from '../../utils/algorithmSteps';
+import { buildFrameMarks, renderFrame } from './renderFrame';
+import { Canvas } from './Canvas';
+
+describe('Canvas responsive rendering', () => {
+  it('observes canvas size, initializes zoom, and reflects current step information', () => {
+    const resizeCallbacks: ResizeObserverCallback[] = [];
+    class MockResizeObserver {
+      constructor(callback: ResizeObserverCallback) { resizeCallbacks.push(callback); }
+      observe = vi.fn();
+      disconnect = vi.fn();
+      unobserve = vi.fn();
+    }
+    vi.stubGlobal('ResizeObserver', MockResizeObserver);
+    vi.stubGlobal('matchMedia', () => ({ matches: false, addEventListener: vi.fn(), removeEventListener: vi.fn() }));
+    const step = generateAlgorithmSteps(['eat'])[1];
+    const { container, unmount } = render(React.createElement(Canvas, { currentStep: step, codeOpen: false, onToggleCode: () => {} }));
+    const canvas = container.querySelector('.canvas-container')!;
+    const svg = container.querySelector('svg')!;
+    Object.defineProperty(canvas, 'getBoundingClientRect', { value: () => ({ width: 900, height: 600 }) });
+    act(() => resizeCallbacks.forEach((callback) => callback([{ contentRect: { width: 900, height: 600 } } as ResizeObserverEntry], {} as ResizeObserver)));
+    expect(svg.getAttribute('viewBox')).toContain('0 0');
+    expect(container.querySelector('.step-explanation')?.textContent).toContain('读取输入索引');
+    expect(container.querySelectorAll('[data-mark-id]').length).toBeGreaterThan(0);
+    unmount();
+    vi.unstubAllGlobals();
+  });
+});
+
+describe('Canvas keyed frame snapshots', () => {
+  const steps = generateAlgorithmSteps(['eat', 'tea']);
+  const layout = { width: 900, height: 680, inputY: 12, charY: 122, groupsY: 298, inputBoxWidth: 64, inputLaneHeight: 104, inputPitch: 74, charLaneHeight: 166, groupsHeight: 118 };
+
+  it('creates deterministic stable IDs and preserves unchanged input geometry', () => {
+    const first = buildFrameMarks(steps[0], layout);
+    const second = buildFrameMarks(steps[1], layout);
+    const ids = first.map((mark) => mark.id);
+    expect(new Set(ids).size).toBe(ids.length);
+    expect(second.filter((mark) => mark.id.startsWith('input-')).map((mark) => mark.id))
+      .toEqual(first.filter((mark) => mark.id.startsWith('input-')).map((mark) => mark.id));
+    expect(second.find((mark) => mark.id === 'input-0-card')?.attrs?.x)
+      .toBe(first.find((mark) => mark.id === 'input-0-card')?.attrs?.x);
+  });
+
+  it('reuses keyed SVG elements, updates states, and removes exiting nodes', () => {
+    const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    const first = buildFrameMarks(steps[0], layout);
+    const second = buildFrameMarks(steps[1], layout);
+    const layer = svg.ownerDocument.createElementNS('http://www.w3.org/2000/svg', 'g');
+    layer.setAttribute('class', 'canvas-layer');
+    svg.appendChild(layer);
+    renderFrame(svg, first, { duration: 0, transform: 'translate(0,0) scale(1)' });
+    expect(svg.querySelectorAll('[data-mark-tag]').length).toBe(first.length);
+    const originalNode = svg.querySelector('[data-mark-id="input-0-card"]');
+    expect(originalNode).not.toBeNull();
+    renderFrame(svg, second, { duration: 0, transform: 'translate(0,0) scale(1)' });
+    expect(svg.querySelector('[data-mark-id="input-0-card"]') === originalNode).toBe(true);
+    const transient = svg.querySelector('[data-mark-id="signature-caption"]');
+    expect(transient).not.toBeNull();
+    renderFrame(svg, first, { duration: 0, transform: 'translate(0,0) scale(1)' });
+    expect(Boolean(svg.querySelector('[data-mark-id="map-decision-card"]'))).toBe(false);
+    expect(svg.querySelector('[data-mark-id="input-0-card"]') === originalNode).toBe(true);
+  });
+
+  it('keeps signature and group IDs tied to semantic keys', () => {
+    const teaStep = steps.find((step) => step.description.includes('生成分组键') && step.currentString === 'tea');
+    const appended = steps.find((step) => step.description.includes('添加到') && step.currentString === 'tea');
+    expect(teaStep).toBeDefined();
+    expect(appended).toBeDefined();
+    const before = buildFrameMarks(teaStep!, layout).map((mark) => mark.id);
+    const after = buildFrameMarks(appended!, layout).map((mark) => mark.id);
+    expect(before).toContain('signature-pill');
+    expect(after).toContain('group-aet-key-card');
+    expect(after).toContain('group-aet-value-1-card');
+    expect(after).toContain('group-aet-value-1-text');
+  });
+});
 
 describe('Canvas State Sync', () => {
   /**

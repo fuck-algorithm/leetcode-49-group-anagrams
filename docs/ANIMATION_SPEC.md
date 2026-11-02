@@ -1,31 +1,39 @@
-# 字母异位词分组动画规格
+# 字母异位词分组动画规格（2026-11-03）
 
-## 可观察状态与布局
+## 可观察结构与坐标
 
-- 输入泳道：`strs[i]` 与当前单词；字符泳道：原始字符、排序签名；Map 泳道：签名键与原始单词列表。
-- 三条泳道保持固定顺序与固定纵向坐标；输入索引为身份标识，Map key 为分组身份；步骤快照独立，播放只读取快照。
-- 画布按容器宽高生成 viewBox；页面默认同时显示 Java 代码，代码栏 320–400px，绘图区优先占用剩余空间。
+- 输入泳道：每个字符串以固定输入索引构成节点；小屏使用较密集的固定 pitch。
+- 字符签名泳道：拆分字符、显示排序结果与签名；固定在输入泳道下方。
+- Map 泳道：Map key 代表排序签名，value 卡片代表原始单词；按 key 的插入顺序形成稳定行。
+- 节点身份规则：`input-{index}-*`、`letter-{index}-*`、`group-{signature}-key-*`、`group-{signature}-value-{index}-*`。动画不生成随机布局。
 
-## 分步动作
+## 操作/状态映射
 
-| 事件 | operation | 教学重点 |
-| --- | --- | --- |
-| 创建 Map | init | key 是排序签名，value 是原始单词列表 |
-| 读取单词 | read | 当前输入索引与原词 |
-| 拆分、排序、固化 key | move | 忽略排列顺序，但保留字母及其重数 |
-| 查询 Map | compare | key 命中复用列表，未命中新建列表 |
-| 新建列表、追加原词 | insert | 排序串只作 key，返回值保留原单词 |
-| 返回分组 | done | 相同签名的单词属于同一异位词组 |
+| 事件 | operation | 视觉变化 |
+|---|---|---|
+| 空 Map | init | 三条泳道与空 Map 注释出现 |
+| 读取字符串 | read | 输入索引节点显示当前态 |
+| 拆分/排序字母 | move | 字符节点建立，签名 pill 更新 |
+| 查找 key | compare | Map lookup 判定文字说明命中/未命中 |
+| 新建 key 或追加原词 | insert | 对应签名行与原词列表增量出现 |
+| 返回分组 | done | 最终 Map 分组留在画布 |
 
-每个步骤带 operation、解释原因/结果的 narration、稳定代码 anchor。关键样例 `eat/tea/ate → aet`，`tan/nat → ant`，`bat → abt`；空字符串的签名为空串。
+## keyed 渲染与运动
 
-## 状态、动画与已知实现范围
+- SVG `canvas-layer` 生命周期跨步骤复用；每个图元按 `data-mark-id` 精确查找和更新，不按步骤清空 SVG。
+- 更新相同 ID 时复用同一个 SVG Element；未出现的新 ID enter；退出 ID 采用 `MOTION.exit` 淡出后删除。
+- 1x 更新时长 240ms、enter 180ms、exit 140ms；大跨度跳步和 `prefers-reduced-motion` 下 JS 动效为 0。
+- 稳定节点位置由输入索引、Map 行号、字符串签名决定；屏幕 resize 只重新计算几何，不改变 ID。
 
-- 当前单词用暖色描边；签名用绿色；Map key 与原始值列表采用不同容器底色和文字标签；状态同时用文字/轮廓表达，不只依赖颜色。
-- 既有 renderer 每步重建 SVG 内容，尚未实现稳定 ID 的分层 keyed join / enter-update-exit 过渡，也没有统一 `MOTION` token 与 JS reduced-motion 零时长实现；这部分不符合 AC-023，需在后续重构 Canvas renderer 时完成并配套测试。
-- CSS reduced-motion 当前可关闭 CSS 动画，但不能覆盖 D3 过渡；不是完整 AC-023 实现。
+## reduced motion 与布局
 
-## 验证边界
+- 画布 renderer 接收 reduced-motion 查询结果，把 mark opacity transition duration 设为 0，仅同步位置/属性/解说/代码高亮。
+- CSS reduced-motion 全局规则关闭界面 transition/animation；步骤/代码/画布状态更新仍完整。
+- 1920×1080、1366×768 默认并列显示代码；低于 1100px 默认优先展示画布，代码按钮打开浮层，避免压缩 SVG 高度。
 
-- 本轮浏览器验收以 1366×768 Chromium：画布卡片 81.25vh、SVG 72.40vh、代码栏 328px；页面无横向或纵向滚动。
-- 验证 Java/Python 语言切换及下一步代码高亮/解说同步；完整 E2E 15 用例、录屏和多视口证据尚未覆盖，故不能据此判定整体 PASS。
+## 验证证据
+
+- 单测验证稳定输入 ID、Map 签名 ID、原 DOM 引用跨帧复用、退出 mark 被移除。
+- 浏览器视口：1920×1080 卡片 86vh/SVG 78vh；1366×768 卡片 80vh/SVG 69vh；1024×768 画布优先代码浮层；390×844 画布优先、单屏无页面溢出。
+- E2E 执行覆盖 1x 快速逐步播放录像、2x 倍速、10 次进度跳转、4 次快速代码切换、reduced-motion、最终 41 步 Map 分组及代码联动。
+- 证据文件：`docs/evidence/1x-complete-playback.webm`、`docs/evidence/initial.png`、`docs/evidence/step-2.png`、`docs/evidence/step-3.png`、`docs/evidence/final-groups.png`、`docs/evidence/reduced-motion.png`。

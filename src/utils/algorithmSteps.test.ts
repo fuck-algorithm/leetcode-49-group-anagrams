@@ -28,6 +28,9 @@ describe('Algorithm Steps Generator', () => {
           
           // 验证每个步骤的属性
           for (const step of steps) {
+            expect(step.operation).toBeTruthy();
+            expect(step.narration.length).toBeGreaterThan(12);
+            expect(step.anchorIds.length).toBeGreaterThan(0);
             // 验证 stepIndex 存在且为数字
             expect(typeof step.stepIndex).toBe('number');
             expect(step.stepIndex).toBeGreaterThanOrEqual(0);
@@ -64,6 +67,15 @@ describe('Algorithm Steps Generator', () => {
       { numRuns: 100 }
     );
   }, 60000);
+
+  it('异位词的排序签名相同，非异位词的签名不同', () => {
+    const steps = generateAlgorithmSteps(['eat', 'tea', 'tan']);
+    const signatures = steps.filter((step) => step.variables.key !== undefined);
+    expect(signatures.find((step) => step.currentString === 'eat')?.currentKey).toBe('aet');
+    expect(signatures.find((step) => step.currentString === 'tea')?.currentKey).toBe('aet');
+    expect(signatures.find((step) => step.currentString === 'tan')?.currentKey).toBe('ant');
+    expect(steps.every((step) => step.operation && step.narration && step.anchorIds.length > 0)).toBe(true);
+  });
 
   it('步骤序列应该以初始化开始，以返回结果结束', async () => {
     await fc.assert(

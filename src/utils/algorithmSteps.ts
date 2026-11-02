@@ -168,6 +168,9 @@ export function generateAlgorithmSteps(inputArray: string[]): AlgorithmStep[] {
   steps.push({
     stepIndex: stepIndex++,
     lineNumber: CODE_LINE_MAP.CREATE_MAP,
+    operation: 'init',
+    narration: '先建立空 Map；每个字母排序签名都将作为一组的唯一键。',
+    anchorIds: ['CREATE_MAP'],
     description: '创建HashMap用于存储分组结果',
     variables: { map: '{}' },
     inputArray: [...inputArray],
@@ -183,6 +186,9 @@ export function generateAlgorithmSteps(inputArray: string[]): AlgorithmStep[] {
     steps.push({
       stepIndex: stepIndex++,
       lineNumber: CODE_LINE_MAP.FOR_LOOP,
+      operation: 'read',
+      narration: `读取输入索引 ${i} 的 "${str}"；接下来提取其字母组成以忽略原始顺序。`,
+      anchorIds: ['FOR_LOOP'],
       description: `遍历第 ${i + 1} 个字符串: "${str}"`,
       variables: { 
         map: mapToObject(groups),
@@ -200,6 +206,9 @@ export function generateAlgorithmSteps(inputArray: string[]): AlgorithmStep[] {
     steps.push({
       stepIndex: stepIndex++,
       lineNumber: CODE_LINE_MAP.TO_CHAR_ARRAY,
+      operation: 'move',
+      narration: `第 ${i + 1} 个单词：拆开 "${str}" 的字符；保留每个字母的出现次数，原来的排列次序不参与分组。`,
+      anchorIds: ['TO_CHAR_ARRAY'],
       description: `将 "${str}" 转换为字符数组: [${charArray.map(c => `'${c}'`).join(', ')}]`,
       variables: { 
         map: mapToObject(groups),
@@ -217,6 +226,9 @@ export function generateAlgorithmSteps(inputArray: string[]): AlgorithmStep[] {
     steps.push({
       stepIndex: stepIndex++,
       lineNumber: CODE_LINE_MAP.SORT_ARRAY,
+      operation: 'move',
+      narration: `第 ${i + 1} 个单词按字母规范排序为 "${sortedArray.join('')}"；字母及其重数相同的单词会得到同一签名。`,
+      anchorIds: ['SORT_ARRAY'],
       description: `排序字符数组: [${sortedArray.map(c => `'${c}'`).join(', ')}]`,
       variables: { 
         map: mapToObject(groups),
@@ -234,6 +246,9 @@ export function generateAlgorithmSteps(inputArray: string[]): AlgorithmStep[] {
     steps.push({
       stepIndex: stepIndex++,
       lineNumber: CODE_LINE_MAP.CREATE_KEY,
+      operation: 'move',
+      narration: `将排序结果 "${key}" 固化为 Map 键；之后用它查找字母组成相同的单词组。`,
+      anchorIds: ['CREATE_KEY'],
       description: `生成分组键: "${key}"`,
       variables: { 
         map: mapToObject(groups),
@@ -252,7 +267,12 @@ export function generateAlgorithmSteps(inputArray: string[]): AlgorithmStep[] {
     steps.push({
       stepIndex: stepIndex++,
       lineNumber: CODE_LINE_MAP.CHECK_KEY,
-      description: keyExists 
+      operation: 'compare',
+      narration: keyExists
+        ? `查询 Map 命中 "${key}"；已有列表代表先前单词的字母组成完全相同。`
+        : `查询 Map 未命中 "${key}"；此前尚无单词拥有这组字母，需要开新组。`,
+      anchorIds: ['CHECK_KEY'],
+      description: keyExists
         ? `键 "${key}" 已存在于map中` 
         : `键 "${key}" 不存在，需要创建新列表`,
       variables: { 
@@ -274,6 +294,9 @@ export function generateAlgorithmSteps(inputArray: string[]): AlgorithmStep[] {
       steps.push({
         stepIndex: stepIndex++,
         lineNumber: CODE_LINE_MAP.PUT_NEW_LIST,
+        operation: 'insert',
+        narration: `为首次出现的签名 "${key}" 创建空列表；后续同签名单词将复用它。`,
+        anchorIds: ['PUT_NEW_LIST'],
         description: `为键 "${key}" 创建新的空列表`,
         variables: { 
           map: mapToObject(groups),
@@ -293,6 +316,9 @@ export function generateAlgorithmSteps(inputArray: string[]): AlgorithmStep[] {
     steps.push({
       stepIndex: stepIndex++,
       lineNumber: CODE_LINE_MAP.ADD_TO_LIST,
+      operation: 'insert',
+      narration: `把原单词 "${str}" 追加到签名 "${key}" 的列表；Map 保存原词而不是排序后的签名。`,
+      anchorIds: ['ADD_TO_LIST'],
       description: `将 "${str}" 添加到键 "${key}" 对应的列表中`,
       variables: { 
         map: mapToObject(groups),
@@ -311,6 +337,9 @@ export function generateAlgorithmSteps(inputArray: string[]): AlgorithmStep[] {
   steps.push({
     stepIndex: stepIndex++,
     lineNumber: CODE_LINE_MAP.RETURN,
+    operation: 'done',
+    narration: '遍历结束并返回 Map 的所有列表；同一排序签名保证组内单词互为字母异位词。',
+    anchorIds: ['RETURN'],
     description: '返回所有分组结果',
     variables: { 
       map: mapToObject(groups),

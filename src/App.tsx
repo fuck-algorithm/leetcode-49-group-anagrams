@@ -9,7 +9,7 @@ const DEFAULT_INPUT = ['eat', 'tea', 'tan', 'ate', 'nat', 'bat'];
 const BASE_INTERVAL = 1000; // 基础间隔1秒
 
 function App() {
-  const [isCodeOpen, setIsCodeOpen] = useState(false);
+  const [isCodeOpen, setIsCodeOpen] = useState(true);
   const initialSteps = useMemo(() => generateAlgorithmSteps(DEFAULT_INPUT), []);
   const [steps, setSteps] = useState<AlgorithmStep[]>(initialSteps);
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
@@ -87,6 +87,14 @@ function App() {
           </aside>
         )}
 
+        {!isCodeOpen && (
+          <button className="code-peek" type="button" onClick={() => setIsCodeOpen(true)}>
+            <span>Java · AC 解法</span>
+            <code>signature = sort(word)</code>
+            <code>groups[signature].push(word)</code>
+            <span className="code-peek-open">展开 Java / Python / Go / JS →</span>
+          </button>
+        )}
         <button
           className={`code-toggle ${isCodeOpen ? 'active' : ''}`}
           type="button"

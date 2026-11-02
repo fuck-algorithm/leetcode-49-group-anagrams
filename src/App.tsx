@@ -9,7 +9,16 @@ const DEFAULT_INPUT = ['eat', 'tea', 'tan', 'ate', 'nat', 'bat'];
 const BASE_INTERVAL = 1000; // 基础间隔1秒
 
 function App() {
-  const [isCodeOpen, setIsCodeOpen] = useState(true);
+  const [isCodeOpen, setIsCodeOpen] = useState(() => window.innerWidth >= 1100);
+  const [isCompactLayout, setIsCompactLayout] = useState(() => window.innerWidth < 1100);
+
+  useEffect(() => {
+    const media = window.matchMedia('(max-width: 1099px)');
+    const update = () => setIsCompactLayout(media.matches);
+    update();
+    media.addEventListener('change', update);
+    return () => media.removeEventListener('change', update);
+  }, [setIsCompactLayout]);
   const initialSteps = useMemo(() => generateAlgorithmSteps(DEFAULT_INPUT), []);
   const [steps, setSteps] = useState<AlgorithmStep[]>(initialSteps);
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
@@ -76,35 +85,17 @@ function App() {
       <Header />
       <InputPanel onRun={handleRun} />
       
-      <main className={`main-content ${isCodeOpen ? 'code-open' : ''}`}>
+      <main className={`main-content ${isCodeOpen ? 'code-open' : ''} ${isCompactLayout ? 'compact-layout' : ''}`}>
         <section className="canvas-section" aria-label="算法执行画布">
-          <Canvas currentStep={currentStep} />
+          <Canvas currentStep={currentStep} codeOpen={isCodeOpen} onToggleCode={() => setIsCodeOpen((open) => !open)} />
         </section>
 
         {isCodeOpen && (
-          <aside className="code-section" aria-label="源代码">
+          <aside className={`code-section ${isCompactLayout ? 'code-overlay' : ''}`} aria-label="源代码">
             <CodePanel currentStep={currentStep} />
           </aside>
         )}
 
-        {!isCodeOpen && (
-          <button className="code-peek" type="button" onClick={() => setIsCodeOpen(true)}>
-            <span>Java · AC 解法</span>
-            <code>signature = sort(word)</code>
-            <code>groups[signature].push(word)</code>
-            <span className="code-peek-open">展开 Java / Python / Go / JS →</span>
-          </button>
-        )}
-        <button
-          className={`code-toggle ${isCodeOpen ? 'active' : ''}`}
-          type="button"
-          aria-expanded={isCodeOpen}
-          onClick={() => setIsCodeOpen((open) => !open)}
-          title={isCodeOpen ? '收起代码' : '查看代码'}
-        >
-          <span aria-hidden="true">{'</>'}</span>
-          <span>{isCodeOpen ? '隐藏代码' : '查看代码'}</span>
-        </button>
       </main>
 
       <ControlPanel

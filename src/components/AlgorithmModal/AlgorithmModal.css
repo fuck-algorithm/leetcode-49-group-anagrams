@@ -118,6 +118,25 @@
   margin-bottom: 0;
 }
 
+.example-block {
+  margin: 10px 0;
+  padding: 12px 14px;
+  overflow-x: auto;
+  color: #dce7f5;
+  background: #172638;
+  border-radius: 7px;
+  font: 12px/1.65 "SFMono-Regular", Consolas, monospace;
+  white-space: pre-wrap;
+}
+
+.constraints-note {
+  padding: 9px 11px;
+  color: #536579 !important;
+  background: #f1f6fa;
+  border-left: 3px solid #36a58e;
+  border-radius: 4px;
+}
+
 .steps-list {
   margin: 0;
   padding-left: 20px;

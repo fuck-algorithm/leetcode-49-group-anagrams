@@ -39,9 +39,9 @@ export function AlgorithmModal({ isOpen, onClose }: AlgorithmModalProps) {
 
   return (
     <div className="modal-overlay">
-      <div className="modal-content" ref={modalRef}>
+      <div className="modal-content" ref={modalRef} role="dialog" aria-modal="true" aria-labelledby="algorithm-modal-title">
         <div className="modal-header">
-          <h2 className="modal-title">
+          <h2 className="modal-title" id="algorithm-modal-title">
             <span className="modal-icon">💡</span>
             算法思路
           </h2>
@@ -55,8 +55,12 @@ export function AlgorithmModal({ isOpen, onClose }: AlgorithmModalProps) {
         <div className="modal-body">
           <section className="algorithm-section">
             <h3>📋 题目描述</h3>
-            <p>给你一个字符串数组，请你将 <strong>字母异位词</strong> 组合在一起。可以按任意顺序返回结果列表。</p>
-            <p><strong>字母异位词</strong> 是由重新排列源单词的所有字母得到的一个新单词。</p>
+            <p>给定字符串数组 <code>strs</code>，请将所有<strong>字母异位词</strong>归为一组，并以二维列表返回。答案可以按任意顺序排列。</p>
+            <p><strong>字母异位词</strong>指由另一个单词的全部字母重新排列得到的单词；字母和每个字母出现次数都必须相同。</p>
+            <pre className="example-block">{`输入：strs = ["eat", "tea", "tan", "ate", "nat", "bat"]
+输出：[["bat"], ["nat", "tan"], ["ate", "eat", "tea"]]
+说明："eat"、"tea"、"ate" 排序后都是 "aet"；"tan"、"nat" 排序后都是 "ant"。`}</pre>
+            <p className="constraints-note"><strong>约束：</strong>1 ≤ strs.length ≤ 10⁴；每个字符串长度 0–100；仅含小写英文字母。</p>
           </section>
 
           <section className="algorithm-section">

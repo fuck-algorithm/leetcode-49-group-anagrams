@@ -1,7 +1,12 @@
 // 算法步骤
+export type StepOperation = 'init' | 'read' | 'move' | 'insert' | 'compare' | 'match' | 'done';
+
 export interface AlgorithmStep {
   stepIndex: number;
   lineNumber: number;
+  operation: StepOperation;
+  narration: string;
+  anchorIds: string[];
   description: string;
   variables: Record<string, unknown>;
   inputArray: string[];

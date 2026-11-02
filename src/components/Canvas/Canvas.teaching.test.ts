@@ -5,6 +5,11 @@ import { getMapAction } from './canvasTeaching';
 describe('Canvas teaching decisions', () => {
   const steps = generateAlgorithmSteps(['eat', 'tea']);
 
+  it('assigns a distinct semantic action and code anchor to each step', () => {
+    expect(steps.every((step) => step.operation && step.narration && step.anchorIds.length > 0)).toBe(true);
+    expect(steps.slice(1).every((step, index) => step.narration !== steps[index].narration)).toBe(true);
+  });
+
   it('does not reveal the Map lookup result while creating a key', () => {
     const keyStep = steps.find((step) => step.description.includes('生成分组键'));
     expect(keyStep).toBeDefined();

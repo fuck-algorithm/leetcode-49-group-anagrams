@@ -45,7 +45,7 @@
 .canvas-container.canvas-scroll { overflow-y: auto; }
 .canvas-container.canvas-scroll-x { overflow-x: auto; }
 .canvas-viewport { position: relative; min-width: 100%; min-height: 100%; }
-.canvas-svg { display: block; min-width: 100%; min-height: 100%; cursor: grab; }
+.canvas-svg { display: block; width: 100%; height: 100%; cursor: grab; }
 .canvas-svg:active { cursor: grabbing; }
 
 .canvas-legend { position: absolute; top: 8px; right: 8px; display: flex; align-items: center; gap: 8px; padding: 4px 7px; color: #68788f; background: rgba(255,255,255,.95); border: 1px solid #e0e7f0; border-radius: 5px; font-size: .58rem; pointer-events: none; z-index: 5; }
@@ -61,7 +61,7 @@
 .canvas-tip { flex: 0 0 17px; padding: 2px 9px; color: #93a0b1; background: #f7f9fc; border-top: 1px solid #e6ebf2; font-size: .56rem; text-align: right; }
 
 .canvas-svg text { font-family: Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; fill: #34445a; }
-.canvas-svg .lane-title { font-size: 10px; font-weight: 750; }
+.canvas-svg .lane-title { font-size: 12px; font-weight: 750; }
 .canvas-svg .lane-status { font-family: "SFMono-Regular", Consolas, monospace; font-size: 8px; font-weight: 750; letter-spacing: .02em; }
 .canvas-svg .array-index { fill: #8997a9; font-family: "SFMono-Regular", Consolas, monospace; font-size: 8px; }
 .canvas-svg .array-value,

@@ -18,7 +18,7 @@ interface CanvasProps {
 const PADDING = 24;
 const INPUT_LANE = { height: 104 };
 const CHAR_LANE = { height: 166 };
-const MIN_HEIGHT = 560;
+const MIN_HEIGHT = 0;
 const ROW_HEIGHT = 54;
 const BOX_HEIGHT = 32;
 
@@ -55,7 +55,7 @@ export function Canvas({ currentStep }: CanvasProps) {
     const inputY = 12;
     const charY = inputY + INPUT_LANE.height + 10;
     const groupsY = charY + CHAR_LANE.height + 10;
-    const canvasHeight = Math.max(MIN_HEIGHT, dimensions.height, groupsY + groupsHeight + 18);
+    const canvasHeight = dimensions.height || groupsY + groupsHeight + 18;
     const largestGroup = Math.max(0, ...Array.from(currentStep?.groups.values() ?? [], (values) => values.length));
     const inputWidth = currentStep ? currentStep.inputArray.length * 74 - 10 + PADDING * 2 + 32 : dimensions.width;
     const groupWidth = PADDING * 2 + 8 + 86 + 18 + largestGroup * 64 + Math.max(0, largestGroup - 1) * 9 + 24;
@@ -78,7 +78,7 @@ export function Canvas({ currentStep }: CanvasProps) {
 
     const layout = getLayout();
     const { canvasWidth: width, canvasHeight: height } = layout;
-    svg.attr('width', width).attr('height', height);
+    svg.attr('viewBox', `0 0 ${width} ${height}`).attr('preserveAspectRatio', 'xMidYMid meet');
     const root = svg.append('g').attr('class', 'viz-layer').attr('transform', transform.toString());
     root.append('rect').attr('class', 'canvas-surface').attr('width', width).attr('height', height).attr('fill', '#fbfcfe');
 
@@ -122,10 +122,11 @@ export function Canvas({ currentStep }: CanvasProps) {
             : `演示步 ${currentStep ? currentStep.stepIndex + 1 : 0}`}
         </span>
       </div>
-      <div className="step-explanation" aria-live="polite">
+      <div className="step-explanation" aria-live="polite" data-operation={currentStep?.operation ?? 'init'}>
+        <span className="operation-badge">{currentStep?.operation?.toUpperCase() ?? 'INIT'}</span>
         <span className="step-explanation-label">{getActionTitle(stepDescription)}</span>
         <span className="step-explanation-separator" aria-hidden="true">—</span>
-        <span>{getStepExplanation(currentStep)}</span>
+        <span>{currentStep?.narration ?? getStepExplanation(currentStep)}</span>
       </div>
       <div className={`canvas-container ${needsScroll ? 'canvas-scroll' : ''} ${needsHorizontalScroll ? 'canvas-scroll-x' : ''}`} ref={containerRef}>
         <div className="canvas-viewport">

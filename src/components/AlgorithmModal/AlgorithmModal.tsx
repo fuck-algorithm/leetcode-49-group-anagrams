@@ -54,23 +54,13 @@ export function AlgorithmModal({ isOpen, onClose }: AlgorithmModalProps) {
         
         <div className="modal-body">
           <section className="algorithm-section">
-            <h3>📋 题目描述</h3>
-            <p>给定字符串数组 <code>strs</code>，请将所有<strong>字母异位词</strong>归为一组，并以二维列表返回。答案可以按任意顺序排列。</p>
-            <p><strong>字母异位词</strong>指由另一个单词的全部字母重新排列得到的单词；字母和每个字母出现次数都必须相同。</p>
-            <pre className="example-block">{`输入：strs = ["eat", "tea", "tan", "ate", "nat", "bat"]
-输出：[["bat"], ["nat", "tan"], ["ate", "eat", "tea"]]
-说明："eat"、"tea"、"ate" 排序后都是 "aet"；"tan"、"nat" 排序后都是 "ant"。`}</pre>
-            <p className="constraints-note"><strong>约束：</strong>1 ≤ strs.length ≤ 10⁴；每个字符串长度 0–100；仅含小写英文字母。</p>
+            <h3>核心规则</h3>
+            <p><strong>字母异位词拥有相同的字母和重数。</strong>将单词排序后，异位词会得到同一签名。例如 `eat`、`tea`、`ate` 都变为 `aet`。</p>
+            <p>用签名作为 Map 的 key，Map 的 value 始终保存原单词列表；不同签名对应不同分组。</p>
           </section>
 
           <section className="algorithm-section">
-            <h3>🎯 核心思路</h3>
-            <p>字母异位词的特点是：<strong>排序后的字符串相同</strong>。</p>
-            <p>例如："eat"、"tea"、"ate" 排序后都是 "aet"。</p>
-          </section>
-
-          <section className="algorithm-section">
-            <h3>🔧 解题步骤</h3>
+            <h3>执行步骤</h3>
             <ol className="steps-list">
               <li>
                 <strong>遍历字符串数组</strong>
@@ -92,7 +82,7 @@ export function AlgorithmModal({ isOpen, onClose }: AlgorithmModalProps) {
           </section>
 
           <section className="algorithm-section">
-            <h3>⏱️ 复杂度分析</h3>
+            <h3>复杂度</h3>
             <ul className="complexity-list">
               <li><strong>时间复杂度：</strong>O(n × k × log k)，其中 n 是字符串数量，k 是字符串最大长度</li>
               <li><strong>空间复杂度：</strong>O(n × k)，用于存储哈希表</li>
@@ -100,7 +90,7 @@ export function AlgorithmModal({ isOpen, onClose }: AlgorithmModalProps) {
           </section>
 
           <section className="algorithm-section">
-            <h3>💻 代码实现</h3>
+            <h3>参考实现</h3>
             <pre className="code-block">
 {`function groupAnagrams(strs: string[]): string[][] {
     const map = new Map<string, string[]>();

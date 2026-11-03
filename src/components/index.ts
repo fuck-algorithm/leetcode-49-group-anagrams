@@ -5,3 +5,4 @@ export { Canvas } from './Canvas';
 export { ControlPanel } from './ControlPanel';
 export { WeChatFloat } from './WeChatFloat';
 export { AlgorithmModal } from './AlgorithmModal';
+export { ProblemDescriptionModal } from './ProblemDescriptionModal';

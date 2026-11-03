@@ -76,9 +76,21 @@ test('progress click seeks', async ({ page }) => {
   await expect(page.locator('.canvas-step-chip')).toContainText('演示步 39');
 });
 
-test('problem statement opens and closes', async ({ page }) => {
-  await page.goto('/'); await page.getByRole('button', { name: /题目描述/ }).click(); const d = page.getByRole('dialog');
-  await expect(d.locator('.example-block')).toBeVisible(); await expect(d.getByText(/约束/)).toBeVisible(); await d.getByRole('button', { name: '关闭' }).click(); await expect(d).toHaveCount(0);
+test('problem statement opens and closes independently from algorithm thoughts', async ({ page }) => {
+  await page.goto('/');
+  await page.getByRole('button', { name: '题目描述' }).click();
+  const description = page.getByRole('dialog', { name: '题目描述' });
+  await expect(description.locator('.problem-example')).toBeVisible();
+  await expect(description.getByText(/约束/)).toBeVisible();
+  await expect(description.getByText(/核心规则/)).toHaveCount(0);
+  await description.getByRole('button', { name: '关闭题目描述' }).click();
+  await expect(description).toHaveCount(0);
+
+  await page.getByRole('button', { name: '算法思路' }).click();
+  const algorithm = page.getByRole('dialog', { name: '算法思路' });
+  await expect(algorithm.getByText('核心规则')).toBeVisible();
+  await expect(algorithm.getByText(/给定字符串数组/)).toHaveCount(0);
+  await algorithm.getByRole('button', { name: '关闭' }).click();
 });
 
 test('community QR is shown with correct aspect ratio', async ({ page }) => {

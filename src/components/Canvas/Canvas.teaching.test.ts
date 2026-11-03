@@ -11,6 +11,14 @@ describe('Canvas teaching decisions', () => {
     expect(steps.slice(1).every((step, index) => step.narration !== steps[index].narration)).toBe(true);
   });
 
+  it('tracks the exact input index when duplicate words are present', () => {
+    const duplicateSteps = generateAlgorithmSteps(['eat', 'eat']);
+    const secondRead = duplicateSteps.find((step) => step.operation === 'read' && step.currentIndex === 1)!;
+    const marks = buildFrameMarks(secondRead, { width: 800, height: 560, inputY: 12, charY: 120, groupsY: 300, inputBoxWidth: 64, inputLaneHeight: 104, inputPitch: 74, charLaneHeight: 166, groupsHeight: 200 });
+    expect(marks.find((mark) => mark.id === 'input-0-card')?.styles?.fill).toBe('#fff');
+    expect(marks.find((mark) => mark.id === 'input-1-card')?.styles?.fill).toBe('#fff5d9');
+  });
+
   it('retains character identity while sorting letters into a signature', () => {
     const splitStep = steps.find((step) => step.description.includes('转换为字符数组'))!;
     const sortedStep = steps.find((step) => step.description.includes('排序字符数组'))!;
@@ -52,6 +60,14 @@ describe('Canvas teaching decisions', () => {
     expect(decision).toBeDefined();
     expect(decision?.currentKey).toBe('aet');
     expect(getMapAction(decision!).mode).toBe('hit');
+    const decisionMarks = buildFrameMarks(decision!, { width: 800, height: 560, inputY: 12, charY: 120, groupsY: 300, inputBoxWidth: 64, inputPitch: 74, inputLaneHeight: 104, charLaneHeight: 166, groupsHeight: 200 });
+    const append = steps.find((step) => step.description.includes('添加到键') && step.currentString === 'tea')!;
+    const appendMarks = buildFrameMarks(append, { width: 800, height: 560, inputY: 12, charY: 120, groupsY: 300, inputBoxWidth: 64, inputPitch: 74, inputLaneHeight: 104, charLaneHeight: 166, groupsHeight: 200 });
+    expect(decisionMarks.find((mark) => mark.id === 'map-decision-text')?.text).toContain('复用已有列表');
+    expect(decisionMarks.find((mark) => mark.id === 'groups-empty')).toBeUndefined();
+    expect(decisionMarks.find((mark) => mark.id === 'group-aet-key-card')?.styles?.fill).toBe('#e0f3ed');
+    expect(appendMarks.find((mark) => mark.id === 'map-decision-text')).toBeUndefined();
+    expect(appendMarks.find((mark) => mark.id === 'group-aet-value-1-card')?.styles?.fill).toBe('#e5efff');
     expect(decision?.groups.get('aet')).toEqual(['eat']);
   });
 });

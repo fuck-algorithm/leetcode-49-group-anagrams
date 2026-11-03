@@ -13,7 +13,7 @@ describe('Canvas responsive rendering', () => {
     const step = generateAlgorithmSteps(['eat', 'tea'])[8];
     const { container, unmount } = render(React.createElement(Canvas, { currentStep: step, playbackSpeed: 2, codeOpen: false, onToggleCode: () => {} }));
     expect(container.querySelector('.canvas-metrics')?.textContent).toContain('分组数1');
-    expect(container.querySelector('.canvas-metrics')?.textContent).toContain('已处理1/2');
+    expect(container.querySelector('.canvas-metrics')?.textContent).toContain('已处理2/2');
     unmount();
     vi.unstubAllGlobals();
   });

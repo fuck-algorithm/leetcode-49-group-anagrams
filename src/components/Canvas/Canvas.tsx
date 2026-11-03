@@ -122,9 +122,8 @@ export function Canvas({ currentStep, playbackSpeed, codeOpen, onToggleCode }: C
   const fallbackNarration = stepDescription.includes('创建HashMap')
     ? '准备一个空 Map；每种排序签名会对应一个原单词列表。'
     : stepDescription || '读取单词，整理字母后按签名归入对应分组。';
-  const stepVariables = currentStep?.variables as Record<string, unknown> | undefined;
   const processed = operation === 'done' ? currentStep?.inputArray.length ?? 0
-    : typeof stepVariables?.i === 'number' ? stepVariables.i + (operation === 'read' ? 0 : 1) : 0;
+    : currentStep?.currentIndex !== undefined ? currentStep.currentIndex + 1 : 0;
   const groupCount = currentStep?.groups.size ?? 0;
 
   return (

@@ -198,6 +198,7 @@ export function generateAlgorithmSteps(inputArray: string[]): AlgorithmStep[] {
       inputArray: [...inputArray],
       groups: deepCopyMap(groups),
       currentString: str,
+      currentIndex: i,
       highlightedElements: [str],
     });
 
@@ -210,14 +211,16 @@ export function generateAlgorithmSteps(inputArray: string[]): AlgorithmStep[] {
       narration: `第 ${i + 1} 个单词：拆开 "${str}" 的字符；保留每个字母的出现次数，原来的排列次序不参与分组。`,
       anchorIds: ['TO_CHAR_ARRAY'],
       description: `将 "${str}" 转换为字符数组: [${charArray.map(c => `'${c}'`).join(', ')}]`,
-      variables: { 
+      variables: {
         map: mapToObject(groups),
         str: str,
         array: charArray,
+        phase: 'split',
       },
       inputArray: [...inputArray],
       groups: deepCopyMap(groups),
       currentString: str,
+      currentIndex: i,
       highlightedElements: [str],
     });
 
@@ -230,14 +233,16 @@ export function generateAlgorithmSteps(inputArray: string[]): AlgorithmStep[] {
       narration: `第 ${i + 1} 个单词按字母规范排序为 "${sortedArray.join('')}"；字母及其重数相同的单词会得到同一签名。`,
       anchorIds: ['SORT_ARRAY'],
       description: `排序字符数组: [${sortedArray.map(c => `'${c}'`).join(', ')}]`,
-      variables: { 
+      variables: {
         map: mapToObject(groups),
         str: str,
         array: sortedArray,
+        phase: 'sort',
       },
       inputArray: [...inputArray],
       groups: deepCopyMap(groups),
       currentString: str,
+      currentIndex: i,
       highlightedElements: [str],
     });
 
@@ -258,6 +263,7 @@ export function generateAlgorithmSteps(inputArray: string[]): AlgorithmStep[] {
       inputArray: [...inputArray],
       groups: deepCopyMap(groups),
       currentString: str,
+      currentIndex: i,
       currentKey: key,
       highlightedElements: [str],
     });
@@ -269,8 +275,8 @@ export function generateAlgorithmSteps(inputArray: string[]): AlgorithmStep[] {
       lineNumber: CODE_LINE_MAP.CHECK_KEY,
       operation: 'compare',
       narration: keyExists
-        ? `查询 Map 命中 "${key}"；已有列表代表先前单词的字母组成完全相同。`
-        : `查询 Map 未命中 "${key}"；此前尚无单词拥有这组字母，需要开新组。`,
+        ? `查询 Map 命中 "${key}"；已有列表代表先前单词的字母组成完全相同，直接复用该组。`
+        : `查询 Map 未命中 "${key}"；当前 Map 没有对应列表，因此先创建新组再保存原词。`,
       anchorIds: ['CHECK_KEY'],
       description: keyExists
         ? `键 "${key}" 已存在于map中` 
@@ -284,6 +290,7 @@ export function generateAlgorithmSteps(inputArray: string[]): AlgorithmStep[] {
       inputArray: [...inputArray],
       groups: deepCopyMap(groups),
       currentString: str,
+      currentIndex: i,
       currentKey: key,
       highlightedElements: [str],
     });
@@ -306,6 +313,7 @@ export function generateAlgorithmSteps(inputArray: string[]): AlgorithmStep[] {
         inputArray: [...inputArray],
         groups: deepCopyMap(groups),
         currentString: str,
+        currentIndex: i,
         currentKey: key,
         highlightedElements: [str],
       });
@@ -328,6 +336,7 @@ export function generateAlgorithmSteps(inputArray: string[]): AlgorithmStep[] {
       inputArray: [...inputArray],
       groups: deepCopyMap(groups),
       currentString: str,
+      currentIndex: i,
       currentKey: key,
       highlightedElements: [str, ...groups.get(key)!],
     });

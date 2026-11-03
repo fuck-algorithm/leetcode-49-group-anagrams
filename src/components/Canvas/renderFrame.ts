@@ -52,7 +52,7 @@ export function buildFrameMarks(step: AlgorithmStep, layout: FrameLayout): Mark[
   addLane(marks, 'input-lane', laneX, inputY, laneWidth, inputLaneHeight, '① 当前输入  strs[]', '#f4f8fd', '#4b82d8', '');
   step.inputArray.forEach((word, index) => {
     const x = inputStart + index * inputPitch;
-    const current = word === step.currentString && step.highlightedElements.includes(word);
+    const current = index === step.currentIndex && step.operation !== 'done';
     marks.push(
       { id: `input-${index}-card`, tag: 'rect', attrs: { x, y: inputY + 44, width: inputBoxWidth, height: 32, rx: 6 }, styles: { fill: current ? '#fff5d9' : '#fff', stroke: current ? '#d99a2b' : '#cbd7e6', 'stroke-width': current ? 2 : 1 } },
       { id: `input-${index}-index`, tag: 'text', attrs: { x: x + inputBoxWidth / 2, y: inputY + 36, 'text-anchor': 'middle' }, styles: { fill: '#687987', 'font-size': 10 }, text: `[${index}]` },
@@ -63,23 +63,25 @@ export function buildFrameMarks(step: AlgorithmStep, layout: FrameLayout): Mark[
   const variables = step.variables as Record<string, unknown>;
   const description = step.description;
   const chars = (variables.array as string[] | undefined) ?? step.currentString?.split('') ?? [];
-  const showChars = description.includes('字符数组') || description.includes('排序字符数组') || Boolean(step.currentKey);
-  const sorting = description.includes('排序字符数组') || Boolean(step.currentKey);
+  const phase = variables.phase as 'split' | 'sort' | undefined;
+  const showChars = phase !== undefined || Boolean(step.currentKey);
+  const sorting = phase === 'sort' || Boolean(step.currentKey);
   const sourcePositions = new Map<string, number[]>();
   step.currentString?.split('').forEach((char, index) => {
     sourcePositions.set(char, [...(sourcePositions.get(char) ?? []), index]);
   });
   const sortedChars = chars.map((char) => ({ char, sourceIndex: sourcePositions.get(char)?.shift() ?? 0 }));
-  const signatureReady = sorting;
+  const signatureReady = phase === 'sort' || Boolean(step.currentKey);
   const signatureVisible = Boolean(step.currentKey);
   const signature = step.currentKey ?? (signatureReady ? sortedChars.map(({ char }) => char).join('') : '');
-  addLane(marks, 'signature-lane', laneX, charY, laneWidth, charLaneHeight, '② 生成排序签名  key', '#f3faf9', '#279b9a', signatureReady ? '签名就绪' : '提取字母');
+  const signatureStatus = signatureVisible ? 'key 已生成' : phase === 'sort' ? '排序已完成' : phase === 'split' ? '字母已拆分' : '等待拆分';
+  addLane(marks, 'signature-lane', laneX, charY, laneWidth, charLaneHeight, '② 生成排序签名  key', '#f3faf9', '#279b9a', signatureStatus);
   const centerX = width / 2;
   const signatureCaption = !step.currentString
     ? '排序签名作为 Map 的分组键'
-    : description.includes('排序字符数组') || step.currentKey
+    : phase === 'sort' || step.currentKey
       ? `排序 "${step.currentString}"（数字表示字符原下标）`
-      : description.includes('字符数组')
+      : phase === 'split'
         ? `拆开 "${step.currentString}"，保留原始顺序`
         : `准备处理 "${step.currentString}" 的字母`;
   marks.push({ id: 'signature-caption', tag: 'text', attrs: { x: centerX, y: charY + 30, 'text-anchor': 'middle' }, styles: { fill: '#596e7a', 'font-size': 10 }, text: signatureCaption });
@@ -126,12 +128,14 @@ export function buildFrameMarks(step: AlgorithmStep, layout: FrameLayout): Mark[
   const keyWidth = 86;
   const valueWidth = 64;
   const valueGap = 9;
-  addLane(marks, 'groups-lane', laneX, groupsY, laneWidth, groupsHeight, '③ 分组表  key → 原单词列表', '#f5faf8', '#2b9b73', groups.length ? `${groups.length} 组` : 'Map 初始化');
-  if (!groups.length) {
+  const decisionPhase = description.includes('已存在于map中') || description.includes('不存在，需要创建');
+  addLane(marks, 'groups-lane', laneX, groupsY, laneWidth, groupsHeight, '③ 分组表  key → 原单词列表', '#f5faf8', '#2b9b73', groups.length ? `${groups.length} 组` : decisionPhase ? '查找中' : 'Map 初始化');
+  if (!groups.length && !decisionPhase) {
     marks.push({ id: 'groups-empty', tag: 'text', attrs: { x: laneX + 18, y: groupsY + 48 }, styles: { fill: '#657783', 'font-size': 11 }, text: 'Map 为空。之后每个排序签名都会成为一组的 key。' });
   }
-  const currentPhase = description.includes('已存在于map中') || description.includes('不存在，需要创建') || description.includes('添加到键') || description.includes('创建新的空列表');
-  if (step.currentKey && currentPhase) {
+  const groupOffset = 72;
+  const groupPitch = 54;
+  if (step.currentKey && decisionPhase) {
     const hit = description.includes('已存在于map中') || (description.includes('添加到键') && groups.some(([key, values]) => key === step.currentKey && values.length > 1));
     marks.push(
       { id: 'map-decision-card', tag: 'rect', attrs: { x: laneX + 8, y: groupsY + 43, width: Math.min(laneWidth - 16, 380), height: 25, rx: 5 }, styles: { fill: hit ? '#edf5ff' : '#f0f7f4', stroke: hit ? '#b4c9e8' : '#acd1bf' } },
@@ -139,7 +143,7 @@ export function buildFrameMarks(step: AlgorithmStep, layout: FrameLayout): Mark[
     );
   }
   groups.forEach(([key, values], row) => {
-    const y = groupsY + 78 + row * 54;
+    const y = groupsY + groupOffset + row * groupPitch;
     const keyX = laneX + 8;
     const valuesX = keyX + keyWidth + 18;
     const active = key === step.currentKey;

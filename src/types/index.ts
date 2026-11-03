@@ -12,6 +12,7 @@ export interface AlgorithmStep {
   inputArray: string[];
   groups: Map<string, string[]>;
   currentString?: string;
+  currentIndex?: number;
   currentKey?: string;
   highlightedElements: string[];
 }

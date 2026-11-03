@@ -38,6 +38,29 @@ test.describe('canvas budget', () => {
   });
 });
 
+test('keeps character phase and signature synchronized with each step', async ({ page }) => {
+  await page.goto('/');
+  await page.getByRole('button', { name: '下一步' }).click();
+  await expect(page.locator('.canvas-step-chip')).toContainText('演示步 2');
+  await expect(page.locator('[data-mark-id="signature-lane-status"]')).toHaveText('等待拆分');
+  await expect(page.locator('[data-mark-id="signature-value"]')).toHaveText('待拆分');
+
+  await page.getByRole('button', { name: '下一步' }).click();
+  await expect(page.locator('.canvas-step-chip')).toContainText('演示步 3');
+  await expect(page.locator('[data-mark-id="letter-0-value"]')).toHaveText('e');
+  await expect(page.locator('[data-mark-id="signature-lane-status"]')).toHaveText('字母已拆分');
+  await expect(page.locator('[data-mark-id="signature-value"]')).toHaveText('待排序');
+
+  await page.getByRole('button', { name: '下一步' }).click();
+  await expect(page.locator('.canvas-step-chip')).toContainText('演示步 4');
+  await expect(page.locator('[data-mark-id="letter-1-value"]')).toHaveText('a');
+  await expect(page.locator('[data-mark-id="signature-lane-status"]')).toHaveText('排序已完成');
+  await expect(page.locator('[data-mark-id="signature-value"]')).toHaveText('待排序');
+
+  await page.getByRole('button', { name: '下一步' }).click();
+  await expect(page.locator('[data-mark-id="signature-value"]')).toHaveText('"aet"');
+});
+
 test('retains SVG mark identity across frames', async ({ page }) => {
   await page.goto('/');
   await page.locator('[data-mark-id="input-0-card"]').evaluate(e => { (window as Window & { __node?: Element }).__node = e; });

@@ -65,13 +65,24 @@ export function buildFrameMarks(step: AlgorithmStep, layout: FrameLayout): Mark[
   const chars = (variables.array as string[] | undefined) ?? step.currentString?.split('') ?? [];
   const showChars = description.includes('字符数组') || description.includes('排序字符数组') || Boolean(step.currentKey);
   const sorting = description.includes('排序字符数组') || Boolean(step.currentKey);
-  const sortedChars = chars.map((char, sourceIndex) => ({ char, sourceIndex }))
-    .sort((left, right) => sorting ? (left.char < right.char ? -1 : left.char > right.char ? 1 : left.sourceIndex - right.sourceIndex) : left.sourceIndex - right.sourceIndex);
+  const sourcePositions = new Map<string, number[]>();
+  step.currentString?.split('').forEach((char, index) => {
+    sourcePositions.set(char, [...(sourcePositions.get(char) ?? []), index]);
+  });
+  const sortedChars = chars.map((char) => ({ char, sourceIndex: sourcePositions.get(char)?.shift() ?? 0 }));
   const signatureReady = sorting;
-  const signature = step.currentKey ?? sortedChars.map(({ char }) => char).join('');
+  const signatureVisible = Boolean(step.currentKey);
+  const signature = step.currentKey ?? (signatureReady ? sortedChars.map(({ char }) => char).join('') : '');
   addLane(marks, 'signature-lane', laneX, charY, laneWidth, charLaneHeight, '② 生成排序签名  key', '#f3faf9', '#279b9a', signatureReady ? '签名就绪' : '提取字母');
   const centerX = width / 2;
-  marks.push({ id: 'signature-caption', tag: 'text', attrs: { x: centerX, y: charY + 42, 'text-anchor': 'middle' }, styles: { fill: '#596e7a', 'font-size': 10 }, text: `"${step.currentString ?? ''}" 的字母排序后，成为签名` });
+  const signatureCaption = !step.currentString
+    ? '排序签名作为 Map 的分组键'
+    : description.includes('排序字符数组') || step.currentKey
+      ? `排序 "${step.currentString}"（数字表示字符原下标）`
+      : description.includes('字符数组')
+        ? `拆开 "${step.currentString}"，保留原始顺序`
+        : `准备处理 "${step.currentString}" 的字母`;
+  marks.push({ id: 'signature-caption', tag: 'text', attrs: { x: centerX, y: charY + 30, 'text-anchor': 'middle' }, styles: { fill: '#596e7a', 'font-size': 10 }, text: signatureCaption });
   const cellSize = width < 700 ? 26 : 30;
   const cellGap = width < 700 ? 4 : 7;
   const lettersWidth = Math.max(0, sortedChars.length * (cellSize + cellGap) - cellGap);
@@ -98,18 +109,17 @@ export function buildFrameMarks(step: AlgorithmStep, layout: FrameLayout): Mark[
   }
   if (showChars) sortedChars.forEach(({ char, sourceIndex }, index) => {
     const x = letterX + index * (cellSize + cellGap);
-    const sourceLabel = sorting ? `原位 ${sourceIndex}` : `位置 ${sourceIndex}`;
     marks.push(
+      { id: `letter-${sourceIndex}-position`, tag: 'text', attrs: { x: x + cellSize / 2, y: charY + 47, 'text-anchor': 'middle' }, styles: { fill: '#687987', 'font-size': 9, 'font-weight': 600 }, text: sorting ? `原${sourceIndex}` : String(sourceIndex) },
       { id: `letter-${sourceIndex}-card`, tag: 'rect', attrs: { x, y: charY + 52, width: cellSize, height: cellSize, rx: 5 }, styles: { fill: sorting ? '#e0f3ed' : '#fff5d9', stroke: sorting ? '#35a183' : '#d99a2b', 'stroke-width': 1.5 } },
       { id: `letter-${sourceIndex}-value`, tag: 'text', attrs: { x: x + cellSize / 2, y: charY + 72, 'text-anchor': 'middle' }, styles: { fill: sorting ? '#126d62' : '#885d12', 'font-size': 14, 'font-weight': 800 }, text: char },
-      { id: `letter-${sourceIndex}-source`, tag: 'text', attrs: { x: x + cellSize / 2, y: charY + 95, 'text-anchor': 'middle' }, styles: { fill: '#687987', 'font-size': 8 }, text: sourceLabel },
     );
   });
   marks.push(
-    { id: 'signature-stem', tag: 'line', attrs: { x1: centerX, y1: charY + 52 + cellSize + 4, x2: centerX, y2: charY + 52 + cellSize + 12 }, styles: { stroke: '#8abbb2', 'stroke-width': 1.3, opacity: signatureReady ? 1 : .35 } },
-    { id: 'signature-pill', tag: 'rect', attrs: { x: centerX - 70, y: charY + 52 + cellSize + 12, width: 140, height: 26, rx: 6 }, styles: { fill: signatureReady ? '#e0f3ed' : '#f7f9fb', stroke: signatureReady ? '#35a183' : '#bac6d4', 'stroke-width': 1, 'stroke-dasharray': signatureReady ? 'none' : '3 2' } },
+    { id: 'signature-stem', tag: 'line', attrs: { x1: centerX, y1: charY + 52 + cellSize + 4, x2: centerX, y2: charY + 52 + cellSize + 12 }, styles: { stroke: '#8abbb2', 'stroke-width': 1.3, opacity: signatureVisible ? 1 : .35 } },
+    { id: 'signature-pill', tag: 'rect', attrs: { x: centerX - 70, y: charY + 52 + cellSize + 12, width: 140, height: 26, rx: 6 }, styles: { fill: signatureVisible ? '#e0f3ed' : '#f7f9fb', stroke: signatureVisible ? '#35a183' : '#bac6d4', 'stroke-width': 1, 'stroke-dasharray': signatureVisible ? 'none' : '3 2' } },
     { id: 'signature-label', tag: 'text', attrs: { x: centerX - 59, y: charY + 52 + cellSize + 29 }, styles: { fill: '#688276', 'font-size': 9, 'font-weight': 700 }, text: 'signature' },
-    { id: 'signature-value', tag: 'text', attrs: { x: centerX + 25, y: charY + 52 + cellSize + 29, 'text-anchor': 'middle' }, styles: { fill: '#216f63', 'font-size': 11, 'font-weight': 800 }, text: signatureReady ? `"${signature}"` : '待排序' },
+    { id: 'signature-value', tag: 'text', attrs: { x: centerX + 25, y: charY + 52 + cellSize + 29, 'text-anchor': 'middle' }, styles: { fill: '#216f63', 'font-size': 11, 'font-weight': 800 }, text: signatureVisible ? `"${signature}"` : (showChars ? '待排序' : '待拆分') },
   );
 
   const groups = [...step.groups.entries()];
@@ -129,7 +139,7 @@ export function buildFrameMarks(step: AlgorithmStep, layout: FrameLayout): Mark[
     );
   }
   groups.forEach(([key, values], row) => {
-    const y = groupsY + (currentPhase ? 78 : 44) + row * 54;
+    const y = groupsY + 78 + row * 54;
     const keyX = laneX + 8;
     const valuesX = keyX + keyWidth + 18;
     const active = key === step.currentKey;

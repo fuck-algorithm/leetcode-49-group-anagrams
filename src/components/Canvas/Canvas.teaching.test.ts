@@ -17,7 +17,14 @@ describe('Canvas teaching decisions', () => {
     const splitMarks = buildFrameMarks(splitStep, { width: 800, height: 560, inputY: 12, charY: 120, groupsY: 300, inputBoxWidth: 64, inputLaneHeight: 104, inputPitch: 74, charLaneHeight: 166, groupsHeight: 200 });
     const sortedMarks = buildFrameMarks(sortedStep, { width: 800, height: 560, inputY: 12, charY: 120, groupsY: 300, inputBoxWidth: 64, inputLaneHeight: 104, inputPitch: 74, charLaneHeight: 166, groupsHeight: 200 });
     expect(new Set(splitMarks.filter((mark) => mark.id.startsWith('letter-')).map((mark) => mark.id))).toEqual(new Set(sortedMarks.filter((mark) => mark.id.startsWith('letter-')).map((mark) => mark.id)));
-    expect(sortedMarks.find((mark) => mark.id === 'letter-1-source')?.text).toBe('原位 1');
+    const originalA = splitMarks.find((mark) => mark.id === 'letter-0-card')?.attrs?.x;
+    const sortedA = sortedMarks.find((mark) => mark.id === 'letter-0-card')?.attrs?.x;
+    expect(sortedA).toBeGreaterThan(originalA as number);
+    expect(sortedMarks.find((mark) => mark.id === 'letter-0-value')?.text).toBe('e');
+    expect(sortedMarks.find((mark) => mark.id === 'letter-0-position')?.text).toBe('原0');
+    expect(splitMarks.find((mark) => mark.id === 'signature-value')?.text).toBe('待排序');
+    expect(splitMarks.find((mark) => mark.id === 'signature-caption')?.text).toContain('保留原始顺序');
+    expect(splitMarks.find((mark) => mark.id === 'letter-0-position')?.text).toBe('0');
   });
 
   it('does not reveal the Map lookup result while creating a key', () => {

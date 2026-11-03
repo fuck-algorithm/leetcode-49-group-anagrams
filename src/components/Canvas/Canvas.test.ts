@@ -7,6 +7,17 @@ import { buildFrameMarks, renderFrame } from './renderFrame';
 import { Canvas } from './Canvas';
 
 describe('Canvas responsive rendering', () => {
+  it('accepts motion speed and exposes step metrics', () => {
+    vi.stubGlobal('ResizeObserver', class { observe = vi.fn(); disconnect = vi.fn(); });
+    vi.stubGlobal('matchMedia', () => ({ matches: true, addEventListener: vi.fn(), removeEventListener: vi.fn() }));
+    const step = generateAlgorithmSteps(['eat', 'tea'])[8];
+    const { container, unmount } = render(React.createElement(Canvas, { currentStep: step, playbackSpeed: 2, codeOpen: false, onToggleCode: () => {} }));
+    expect(container.querySelector('.canvas-metrics')?.textContent).toContain('分组数1');
+    expect(container.querySelector('.canvas-metrics')?.textContent).toContain('已处理1/2');
+    unmount();
+    vi.unstubAllGlobals();
+  });
+
   it('observes canvas size, initializes zoom, and reflects current step information', () => {
     const resizeCallbacks: ResizeObserverCallback[] = [];
     class MockResizeObserver {
@@ -18,7 +29,7 @@ describe('Canvas responsive rendering', () => {
     vi.stubGlobal('ResizeObserver', MockResizeObserver);
     vi.stubGlobal('matchMedia', () => ({ matches: false, addEventListener: vi.fn(), removeEventListener: vi.fn() }));
     const step = generateAlgorithmSteps(['eat'])[1];
-    const { container, unmount } = render(React.createElement(Canvas, { currentStep: step, codeOpen: false, onToggleCode: () => {} }));
+    const { container, unmount } = render(React.createElement(Canvas, { currentStep: step, playbackSpeed: 1, codeOpen: false, onToggleCode: () => {} }));
     const canvas = container.querySelector('.canvas-container')!;
     const svg = container.querySelector('svg')!;
     Object.defineProperty(canvas, 'getBoundingClientRect', { value: () => ({ width: 900, height: 600 }) });

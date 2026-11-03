@@ -6,6 +6,7 @@ import './Canvas.css';
 
 interface CanvasProps {
   currentStep: AlgorithmStep | null;
+  playbackSpeed: number;
   codeOpen: boolean;
   onToggleCode: () => void;
 }
@@ -15,7 +16,7 @@ const INPUT_LANE = { height: 104 };
 const CHAR_LANE = { height: 166 };
 const ROW_HEIGHT = 54;
 
-export function Canvas({ currentStep, codeOpen, onToggleCode }: CanvasProps) {
+export function Canvas({ currentStep, playbackSpeed, codeOpen, onToggleCode }: CanvasProps) {
   const svgRef = useRef<SVGSVGElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const [dimensions, setDimensions] = useState({ width: 800, height: 560 });
@@ -88,11 +89,11 @@ export function Canvas({ currentStep, codeOpen, onToggleCode }: CanvasProps) {
     const previous = previousStepRef.current;
     const jumped = previous && Math.abs(previous.stepIndex - currentStep.stepIndex) > 1;
     renderFrame(svgRef.current, buildFrameMarks(currentStep, frame), {
-      duration: reduced || jumped ? 0 : MOTION.update,
+      duration: reduced || jumped ? 0 : MOTION.update / playbackSpeed,
       transform: transform.toString(),
     });
     previousStepRef.current = currentStep;
-  }, [currentStep, dimensions, transform, layout]);
+  }, [currentStep, dimensions, transform, layout, playbackSpeed]);
 
   const handleZoom = (factor: number) => {
     if (!svgRef.current) return;
@@ -121,6 +122,10 @@ export function Canvas({ currentStep, codeOpen, onToggleCode }: CanvasProps) {
   const fallbackNarration = stepDescription.includes('创建HashMap')
     ? '准备一个空 Map；每种排序签名会对应一个原单词列表。'
     : stepDescription || '读取单词，整理字母后按签名归入对应分组。';
+  const stepVariables = currentStep?.variables as Record<string, unknown> | undefined;
+  const processed = operation === 'done' ? currentStep?.inputArray.length ?? 0
+    : typeof stepVariables?.i === 'number' ? stepVariables.i + (operation === 'read' ? 0 : 1) : 0;
+  const groupCount = currentStep?.groups.size ?? 0;
 
   return (
     <div className="canvas-wrap">
@@ -154,6 +159,11 @@ export function Canvas({ currentStep, codeOpen, onToggleCode }: CanvasProps) {
           <button className="canvas-control-btn" onClick={() => handleZoom(0.8)} title="缩小">−</button>
           <button className="canvas-control-btn" onClick={handleZoomReset} title="重置缩放">⟳</button>
         </div>
+      </div>
+      <div className="canvas-metrics" aria-label="当前算法指标">
+        <span><strong>已处理</strong>{processed}/{currentStep?.inputArray.length ?? 0}</span>
+        <span><strong>分组数</strong>{groupCount}</span>
+        <span><strong>本步</strong>{operation === 'compare' ? '查找签名' : operation === 'insert' ? '写入分组' : operation === 'done' ? '结果就绪' : '构造签名'}</span>
       </div>
       <div className="canvas-tip">沿着单词 → 排序签名 → 分组列表阅读</div>
     </div>

@@ -64,9 +64,11 @@ export function buildFrameMarks(step: AlgorithmStep, layout: FrameLayout): Mark[
   const description = step.description;
   const chars = (variables.array as string[] | undefined) ?? step.currentString?.split('') ?? [];
   const showChars = description.includes('字符数组') || description.includes('排序字符数组') || Boolean(step.currentKey);
-  const sortedChars = description.includes('排序字符数组') || Boolean(step.currentKey) ? chars.slice().sort() : chars;
-  const signatureReady = description.includes('排序字符数组') || Boolean(step.currentKey);
-  const signature = step.currentKey ?? sortedChars.join('');
+  const sorting = description.includes('排序字符数组') || Boolean(step.currentKey);
+  const sortedChars = chars.map((char, sourceIndex) => ({ char, sourceIndex }))
+    .sort((left, right) => sorting ? (left.char < right.char ? -1 : left.char > right.char ? 1 : left.sourceIndex - right.sourceIndex) : left.sourceIndex - right.sourceIndex);
+  const signatureReady = sorting;
+  const signature = step.currentKey ?? sortedChars.map(({ char }) => char).join('');
   addLane(marks, 'signature-lane', laneX, charY, laneWidth, charLaneHeight, '② 生成排序签名  key', '#f3faf9', '#279b9a', signatureReady ? '签名就绪' : '提取字母');
   const centerX = width / 2;
   marks.push({ id: 'signature-caption', tag: 'text', attrs: { x: centerX, y: charY + 42, 'text-anchor': 'middle' }, styles: { fill: '#596e7a', 'font-size': 10 }, text: `"${step.currentString ?? ''}" 的字母排序后，成为签名` });
@@ -94,11 +96,13 @@ export function buildFrameMarks(step: AlgorithmStep, layout: FrameLayout): Mark[
       { id: 'flow-guide', tag: 'text', attrs: { x: flowLabelX, y: inputY + 16, 'text-anchor': flowLabelAnchor }, styles: { ...arrowTextStyles, fill: '#607985', 'font-size': 9 }, text: '数据流向' },
     );
   }
-  if (showChars) sortedChars.forEach((char, index) => {
+  if (showChars) sortedChars.forEach(({ char, sourceIndex }, index) => {
     const x = letterX + index * (cellSize + cellGap);
+    const sourceLabel = sorting ? `原位 ${sourceIndex}` : `位置 ${sourceIndex}`;
     marks.push(
-      { id: `letter-${index}-card`, tag: 'rect', attrs: { x, y: charY + 52, width: cellSize, height: cellSize, rx: 5 }, styles: { fill: '#eaf6f3', stroke: '#6bbab1', 'stroke-width': 1.2 } },
-      { id: `letter-${index}-value`, tag: 'text', attrs: { x: x + cellSize / 2, y: charY + 72, 'text-anchor': 'middle' }, styles: { fill: '#126d62', 'font-size': 14, 'font-weight': 800 }, text: char },
+      { id: `letter-${sourceIndex}-card`, tag: 'rect', attrs: { x, y: charY + 52, width: cellSize, height: cellSize, rx: 5 }, styles: { fill: sorting ? '#e0f3ed' : '#fff5d9', stroke: sorting ? '#35a183' : '#d99a2b', 'stroke-width': 1.5 } },
+      { id: `letter-${sourceIndex}-value`, tag: 'text', attrs: { x: x + cellSize / 2, y: charY + 72, 'text-anchor': 'middle' }, styles: { fill: sorting ? '#126d62' : '#885d12', 'font-size': 14, 'font-weight': 800 }, text: char },
+      { id: `letter-${sourceIndex}-source`, tag: 'text', attrs: { x: x + cellSize / 2, y: charY + 95, 'text-anchor': 'middle' }, styles: { fill: '#687987', 'font-size': 8 }, text: sourceLabel },
     );
   });
   marks.push(
@@ -176,14 +180,18 @@ export function renderFrame(svgElement: SVGSVGElement, marks: Mark[], options: {
       const pendingExit = exitTimers.get(element);
       if (pendingExit !== undefined) window.clearTimeout(pendingExit);
       exitTimers.delete(element);
-      element.style.transition = 'none';
+      element.style.transition = options.duration > 0
+        ? `all ${options.duration}ms cubic-bezier(.22,.61,.36,1)`
+        : 'none';
       setMark(element, mark);
       element.style.opacity = '1';
     });
     selection.enter().each(function (mark) {
       const element = this.ownerDocument.createElementNS('http://www.w3.org/2000/svg', tag) as SVGElement & { __data__?: Mark };
       element.__data__ = mark;
-      element.style.transition = 'none';
+      element.style.transition = options.duration > 0
+        ? `opacity ${Math.min(MOTION.enter, options.duration)}ms cubic-bezier(.22,.61,.36,1)`
+        : 'none';
       element.setAttribute('data-mark-id', mark.id);
       element.setAttribute('data-mark-tag', tag);
       element.style.opacity = '0';

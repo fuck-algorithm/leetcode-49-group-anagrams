@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { generateAlgorithmSteps } from '../../utils/algorithmSteps';
 import { getMapAction } from './canvasTeaching';
+import { buildFrameMarks } from './renderFrame';
 
 describe('Canvas teaching decisions', () => {
   const steps = generateAlgorithmSteps(['eat', 'tea']);
@@ -8,6 +9,15 @@ describe('Canvas teaching decisions', () => {
   it('assigns a distinct semantic action and code anchor to each step', () => {
     expect(steps.every((step) => step.operation && step.narration && step.anchorIds.length > 0)).toBe(true);
     expect(steps.slice(1).every((step, index) => step.narration !== steps[index].narration)).toBe(true);
+  });
+
+  it('retains character identity while sorting letters into a signature', () => {
+    const splitStep = steps.find((step) => step.description.includes('转换为字符数组'))!;
+    const sortedStep = steps.find((step) => step.description.includes('排序字符数组'))!;
+    const splitMarks = buildFrameMarks(splitStep, { width: 800, height: 560, inputY: 12, charY: 120, groupsY: 300, inputBoxWidth: 64, inputLaneHeight: 104, inputPitch: 74, charLaneHeight: 166, groupsHeight: 200 });
+    const sortedMarks = buildFrameMarks(sortedStep, { width: 800, height: 560, inputY: 12, charY: 120, groupsY: 300, inputBoxWidth: 64, inputLaneHeight: 104, inputPitch: 74, charLaneHeight: 166, groupsHeight: 200 });
+    expect(new Set(splitMarks.filter((mark) => mark.id.startsWith('letter-')).map((mark) => mark.id))).toEqual(new Set(sortedMarks.filter((mark) => mark.id.startsWith('letter-')).map((mark) => mark.id)));
+    expect(sortedMarks.find((mark) => mark.id === 'letter-1-source')?.text).toBe('原位 1');
   });
 
   it('does not reveal the Map lookup result while creating a key', () => {

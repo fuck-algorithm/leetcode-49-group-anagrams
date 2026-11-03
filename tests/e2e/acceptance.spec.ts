@@ -21,6 +21,8 @@ test.describe('canvas budget', () => {
     await expect(page.locator('.operation-badge')).toBeVisible();
     await expect(page.locator('.step-explanation')).toBeVisible();
     await expect(page.locator('.canvas-legend')).toBeVisible();
+    await expect(page.locator('.canvas-metrics')).toContainText('已处理');
+    await expect(page.locator('.canvas-metrics')).toContainText('分组数');
     await expect(page.locator('[data-mark-tag="path"][data-mark-id="flow-arrow-input-signature"]')).toHaveAttribute('d', /L.*\d/);
     await expect(page.locator('[data-mark-tag="path"][data-mark-id="flow-arrow-signature-map"]')).toHaveAttribute('d', /L.*\d/);
     await expect(page.locator('[data-mark-id="flow-label-input-signature"]')).toContainText('读取单词 ↓');

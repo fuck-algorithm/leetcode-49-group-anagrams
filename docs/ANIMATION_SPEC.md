@@ -5,7 +5,7 @@
 - 输入泳道：每个字符串以固定输入索引构成节点；小屏使用较密集的固定 pitch。
 - 字符签名泳道：拆分字符、显示排序结果与签名；固定在输入泳道下方。
 - Map 泳道：Map key 代表排序签名，value 卡片代表原始单词；按 key 的插入顺序形成稳定行。
-- 节点身份规则：`input-{index}-*`、`letter-{index}-*`、`group-{signature}-key-*`、`group-{signature}-value-{index}-*`。动画不生成随机布局。
+- 节点身份规则：`input-{index}-*`、`letter-{sourceIndex}-*`、`group-{signature}-key-*`、`group-{signature}-value-{index}-*`。字母节点以原单词中的来源索引作为稳定 ID；字符拆分保留原顺序，排序帧只移动字符位置，并显示“原位 N”，使身份与位置变化可追踪。动画不生成随机布局。
 
 ## 操作/状态映射
 
@@ -23,7 +23,7 @@
 
 - SVG `canvas-layer` 生命周期跨步骤复用；每个图元按 `data-mark-id` 精确查找和更新，不按步骤清空 SVG。
 - 更新相同 ID 时复用同一个 SVG Element；未出现的新 ID enter；退出 ID 采用 `MOTION.exit` 淡出后删除。
-- 1x 更新时长 240ms、enter 180ms、exit 140ms；大跨度跳步和 `prefers-reduced-motion` 下 JS 动效为 0。
+- 1x 更新时长 240ms、enter 最长 180ms、exit 140ms；Canvas 根据播放倍速同步缩放更新时长（`240ms / playbackSpeed`），大跨度跳步和 `prefers-reduced-motion` 下 JS 动效为 0。新增字母的淡入和已有元素的属性更新使用同一节奏 token。
 - 稳定节点位置由输入索引、Map 行号、字符串签名决定；屏幕 resize 只重新计算几何，不改变 ID。
 
 ## reduced motion 与布局

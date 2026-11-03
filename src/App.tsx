@@ -87,7 +87,7 @@ function App() {
       
       <main className={`main-content ${isCodeOpen ? 'code-open' : ''} ${isCompactLayout ? 'compact-layout' : ''}`}>
         <section className="canvas-section" aria-label="算法执行画布">
-          <Canvas currentStep={currentStep} codeOpen={isCodeOpen} onToggleCode={() => setIsCodeOpen((open) => !open)} />
+          <Canvas currentStep={currentStep} playbackSpeed={playbackSpeed} codeOpen={isCodeOpen} onToggleCode={() => setIsCodeOpen((open) => !open)} />
         </section>
 
         {isCodeOpen && (

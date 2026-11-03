@@ -9,7 +9,7 @@ export const MOTION = {
 
 const exitTimers = new WeakMap<SVGElement, number>();
 
-type MarkTag = 'rect' | 'line' | 'text' | 'circle';
+type MarkTag = 'rect' | 'line' | 'text' | 'circle' | 'path';
 type Mark = {
   id: string;
   tag: MarkTag;
@@ -44,9 +44,10 @@ export function buildFrameMarks(step: AlgorithmStep, layout: FrameLayout): Mark[
   const { width, inputY, charY, groupsY, inputBoxWidth, inputLaneHeight, inputPitch, charLaneHeight, groupsHeight } = layout;
   const marks: Mark[] = [];
   const laneX = 24;
-  const laneWidth = width - 48;
-  const inputGap = inputPitch - inputBoxWidth;
-  const inputTotal = step.inputArray.length * inputPitch - inputGap;
+  const directionGutter = width >= 950 ? 40 : 0;
+  const laneWidth = width - 48 - directionGutter;
+  const inputCellGap = inputPitch - inputBoxWidth;
+  const inputTotal = step.inputArray.length * inputPitch - inputCellGap;
   const inputStart = laneX + Math.max(0, (laneWidth - inputTotal) / 2);
   addLane(marks, 'input-lane', laneX, inputY, laneWidth, inputLaneHeight, '① 当前输入  strs[]', '#f4f8fd', '#4b82d8', '');
   step.inputArray.forEach((word, index) => {
@@ -73,6 +74,26 @@ export function buildFrameMarks(step: AlgorithmStep, layout: FrameLayout): Mark[
   const cellGap = width < 700 ? 4 : 7;
   const lettersWidth = Math.max(0, sortedChars.length * (cellSize + cellGap) - cellGap);
   const letterX = centerX - lettersWidth / 2;
+  const showDirection = true;
+  const narrowFlow = width < 700;
+  const flowX = narrowFlow ? 38 : width - 62;
+  const flowLabelX = narrowFlow ? flowX + 10 : flowX - 10;
+  const flowLabelAnchor = narrowFlow ? 'start' : 'end';
+  const inputBottom = inputY + inputLaneHeight;
+  const charBottom = charY + charLaneHeight;
+  const inputGap = charY - inputBottom;
+  const mapGap = groupsY - charBottom;
+  const arrowStyles = { stroke: '#567f91', 'stroke-width': 2.4, 'stroke-linecap': 'round' };
+  const arrowTextStyles = { fill: '#365968', 'font-size': 10, 'font-weight': 700 };
+  if (showDirection) {
+    marks.push(
+      { id: 'flow-arrow-input-signature', tag: 'path', attrs: { d: `M${flowX} ${inputBottom + 3} L${flowX} ${charY - 3}`, 'marker-end': 'url(#arrow-data-flow)' }, styles: arrowStyles },
+      { id: 'flow-label-input-signature', tag: 'text', attrs: { x: flowLabelX, y: inputBottom + Math.max(18, inputGap * 0.65), 'text-anchor': flowLabelAnchor }, styles: arrowTextStyles, text: '读取单词 ↓' },
+      { id: 'flow-arrow-signature-map', tag: 'path', attrs: { d: `M${flowX} ${charBottom + 3} L${flowX} ${groupsY - 3}`, 'marker-end': 'url(#arrow-data-flow)' }, styles: arrowStyles },
+      { id: 'flow-label-signature-map', tag: 'text', attrs: { x: flowLabelX, y: charBottom + Math.max(18, mapGap * 0.65), 'text-anchor': flowLabelAnchor }, styles: arrowTextStyles, text: '用 key 查 Map ↓' },
+      { id: 'flow-guide', tag: 'text', attrs: { x: flowLabelX, y: inputY + 16, 'text-anchor': flowLabelAnchor }, styles: { ...arrowTextStyles, fill: '#607985', 'font-size': 9 }, text: '数据流向' },
+    );
+  }
   if (showChars) sortedChars.forEach((char, index) => {
     const x = letterX + index * (cellSize + cellGap);
     marks.push(
@@ -146,7 +167,7 @@ export function renderFrame(svgElement: SVGSVGElement, marks: Mark[], options: {
   const root = layer(svgElement);
   root.setAttribute('transform', options.transform);
   const nextIds = new Set(marks.map((mark) => mark.id));
-  (['rect', 'line', 'text', 'circle'] as const).forEach((tag) => {
+  (['rect', 'line', 'text', 'circle', 'path'] as const).forEach((tag) => {
     const tagMarks = marks.filter((mark) => mark.tag === tag);
     const selection = d3.select(root).selectAll<SVGElement, Mark>(`[data-mark-tag="${tag}"]`)
       .data(tagMarks, (mark, index, nodes) => mark?.id ?? nodes[index].getAttribute('data-mark-id') ?? '');

@@ -46,13 +46,15 @@ export function Canvas({ currentStep, codeOpen, onToggleCode }: CanvasProps) {
     const narrow = dimensions.width < 700;
     const compact = dimensions.width < 1100 || dimensions.height < 700;
     const gap = compact ? 6 : 10;
+    const directionGutter = dimensions.width >= 700 ? 48 : 0;
+    const directionGap = compact ? 54 : 60;
     const inputBoxWidth = narrow ? 46 : 64;
     const inputPitch = narrow ? 54 : 74;
     const inputLaneHeight = narrow ? 88 : INPUT_LANE.height;
     const charLaneHeight = narrow ? 132 : compact ? 148 : CHAR_LANE.height;
     const inputY = 12;
-    const charY = inputY + inputLaneHeight + gap;
-    const groupsY = charY + charLaneHeight + gap;
+    const charY = inputY + inputLaneHeight + gap + directionGap;
+    const groupsY = charY + charLaneHeight + gap + directionGap;
     const groupsHeight = 50 + Math.max(currentStep?.groups.size ?? 0, 1) * ROW_HEIGHT + 14;
     const contentHeight = groupsY + groupsHeight + 18;
     const height = Math.max(dimensions.height, contentHeight);
@@ -61,7 +63,7 @@ export function Canvas({ currentStep, codeOpen, onToggleCode }: CanvasProps) {
       : dimensions.width;
     const largestGroup = Math.max(0, ...Array.from(currentStep?.groups.values() ?? [], (values) => values.length));
     const groupWidth = PADDING * 2 + 8 + 86 + 18 + largestGroup * 64 + Math.max(0, largestGroup - 1) * 9 + 24;
-    const width = Math.max(dimensions.width, inputWidth, groupWidth);
+    const width = Math.max(dimensions.width, inputWidth, groupWidth) + directionGutter;
     return { width, height, inputY, charY, groupsY, inputBoxWidth, inputPitch, inputLaneHeight, charLaneHeight, groupsHeight, contentWidth: width, contentHeight };
   }, [currentStep, dimensions]);
 
@@ -70,6 +72,12 @@ export function Canvas({ currentStep, codeOpen, onToggleCode }: CanvasProps) {
     const svg = d3.select(svgRef.current);
     const frame = layout();
     svg.attr('viewBox', `0 0 ${frame.width} ${frame.height}`).attr('preserveAspectRatio', 'xMidYMid meet');
+    const defs = svg.selectAll<SVGDefsElement, string>('defs.canvas-defs').data(['defs'], (id) => id)
+      .join('defs').attr('class', 'canvas-defs');
+    const marker = defs.selectAll<SVGMarkerElement, string>('marker#arrow-data-flow').data(['arrow'], (id) => id)
+      .join('marker').attr('id', 'arrow-data-flow').attr('viewBox', '0 0 10 10').attr('refX', 8).attr('refY', 5)
+      .attr('markerWidth', 7).attr('markerHeight', 7).attr('markerUnits', 'strokeWidth').attr('orient', 'auto-start-reverse');
+    marker.selectAll<SVGPathElement, string>('path').data(['arrow']).join('path').attr('d', 'M 0 0 L 10 5 L 0 10 z').attr('fill', '#567f91');
     svg.selectAll<SVGRectElement, string>('rect.canvas-surface')
       .data(['surface'], (id) => id)
       .join('rect').attr('class', 'canvas-surface')

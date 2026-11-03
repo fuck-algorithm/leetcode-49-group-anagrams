@@ -66,6 +66,28 @@ describe('Canvas keyed frame snapshots', () => {
     expect(svg.querySelector('[data-mark-id="input-0-card"]') === originalNode).toBe(true);
   });
 
+  it('builds direction arrows and instructional labels at desktop and mobile widths', () => {
+    for (const width of [1024, 390]) {
+      const narrow = width < 700;
+      const marks = buildFrameMarks(steps[1], {
+        width,
+        height: 600,
+        inputY: 12,
+        charY: 156,
+        groupsY: 330,
+        inputBoxWidth: narrow ? 46 : 64,
+        inputLaneHeight: narrow ? 88 : 104,
+        inputPitch: narrow ? 54 : 74,
+        charLaneHeight: narrow ? 132 : 148,
+        groupsHeight: 118,
+      });
+      expect(marks.find((mark) => mark.id === 'flow-arrow-input-signature')?.attrs?.d).toContain('L');
+      expect(marks.find((mark) => mark.id === 'flow-arrow-signature-map')?.attrs?.d).toContain('L');
+      expect(marks.find((mark) => mark.id === 'flow-label-input-signature')?.text).toContain('读取单词');
+      expect(marks.find((mark) => mark.id === 'flow-label-signature-map')?.text).toContain('用 key 查 Map');
+    }
+  });
+
   it('keeps signature and group IDs tied to semantic keys', () => {
     const teaStep = steps.find((step) => step.description.includes('生成分组键') && step.currentString === 'tea');
     const appended = steps.find((step) => step.description.includes('添加到') && step.currentString === 'tea');

@@ -21,9 +21,15 @@ test.describe('canvas budget', () => {
     await expect(page.locator('.operation-badge')).toBeVisible();
     await expect(page.locator('.step-explanation')).toBeVisible();
     await expect(page.locator('.canvas-legend')).toBeVisible();
+    await expect(page.locator('[data-mark-tag="path"][data-mark-id="flow-arrow-input-signature"]')).toHaveAttribute('d', /L.*\d/);
+    await expect(page.locator('[data-mark-tag="path"][data-mark-id="flow-arrow-signature-map"]')).toHaveAttribute('d', /L.*\d/);
+    await expect(page.locator('[data-mark-id="flow-label-input-signature"]')).toContainText('读取单词 ↓');
+    await expect(page.locator('[data-mark-id="flow-label-signature-map"]')).toContainText('用 key 查 Map ↓');
   });
   test('small viewport code overlay does not resize canvas', async ({ page }) => {
     await page.setViewportSize({ width: 1024, height: 768 }); await page.goto('/');
+    await expect(page.locator('[data-mark-tag="path"][data-mark-id="flow-arrow-input-signature"]')).toHaveAttribute('d', /L/);
+    await expect(page.locator('[data-mark-id="flow-label-input-signature"]')).toContainText('读取单词');
     const canvas = page.locator('.canvas-section'); const before = await canvas.evaluate(e => e.getBoundingClientRect().height);
     await page.locator('.code-toggle').click(); await expect(page.locator('.code-section')).toHaveClass(/code-overlay/);
     expect(await canvas.evaluate(e => e.getBoundingClientRect().height)).toBe(before);

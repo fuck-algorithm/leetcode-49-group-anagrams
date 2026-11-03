@@ -70,6 +70,9 @@
 .canvas-svg .array-value.current { fill: #885d12; font-weight: 800; }
 .canvas-svg .char-value { fill: #126d62; font-family: ui-monospace, monospace; font-size: 14px; font-weight: 800; }
 .canvas-svg .transform-caption { fill: #596e7a; font-size: 10px; }
+.canvas-svg .dataflow-arrow { fill: none; stroke: #567f91; stroke-width: 2.4; stroke-linecap: round; }
+.canvas-svg .dataflow-label { fill: #365968; font-size: 10px; font-weight: 750; paint-order: stroke; stroke: #fbfcfe; stroke-width: 3px; stroke-linejoin: round; }
+.canvas-svg .dataflow-hint { fill: #607985; font-size: 9px; font-weight: 700; }
 .canvas-svg .signature-link { stroke: #8abbb2; stroke-width: 1.3; }
 .canvas-svg .signature-pill { fill: #f7f9fb; stroke: #bac6d4; stroke-width: 1; stroke-dasharray: 3 2; }
 .canvas-svg .signature-pill.is-ready { fill: #e0f3ed; stroke: #35a183; stroke-width: 1.5; stroke-dasharray: none; }
